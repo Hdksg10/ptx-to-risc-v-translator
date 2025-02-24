@@ -1,0 +1,3 @@
+[submodule "deps/3rd/cricket"]
+	path = deps/3rd/cricket
+	url = git@github.com:Hdksg10/cricket.git
