@@ -1,3 +1,4 @@
 disk
 *.img
 build
+.vscode
