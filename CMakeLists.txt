@@ -11,7 +11,7 @@ file(GLOB CUDA_SRC_FILES
     "src/EmulatedCUDADevice.cpp"
     )
 add_library(cuda_riscv SHARED ${CUDA_SRC_FILES})
-target_include_directories(cuda_riscv PUBLIC include include/cuda)
+target_include_directories(cuda_riscv PUBLIC include include/cuda/include)
 
 # Build cricket server
 set(CRICKET_SUBDIR "deps/3rd/cricket")
