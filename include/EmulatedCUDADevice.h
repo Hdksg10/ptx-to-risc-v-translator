@@ -6,6 +6,8 @@
 #include <string>
 #include <cuda.h>
 
+#include <CUDAContext.h>
+
 namespace driver {
     constexpr int MAX_DEVICES = 1; // Maximum number of devices to emulate
     constexpr int DRIVER_VERSION = 8000; // Version PTX 5.0. CUDA 8.0
@@ -31,6 +33,8 @@ namespace driver {
         const static std::string name;
         const static CUuuid_st uuid;
         constexpr static size_t totalMemBytes = 4294967296; // 4 * 1024 * 1024 * 1024 Bytes
+    public:
+        driver::CUDAContext* context; // primary context of device
     };
     extern EmulatedCUDADevice* devices[MAX_DEVICES];
     extern bool driverInitialized;

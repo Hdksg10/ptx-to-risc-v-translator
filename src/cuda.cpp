@@ -98,4 +98,22 @@ CUresult CUDAAPI cuDeviceGetAttribute(int *pi, CUdevice_attribute attrib, CUdevi
     return CUDA_SUCCESS;
 }
 
+CUresult CUDAAPI cuDevicePrimaryCtxRetain(CUcontext *pctx, CUdevice dev) {
+    if (driver::driverDeinitialized) return CUDA_ERROR_DEINITIALIZED;
+    if (!driver::driverInitialized) return CUDA_ERROR_NOT_INITIALIZED;
+    if (dev < 0 || dev >= driver::MAX_DEVICES) return CUDA_ERROR_INVALID_DEVICE; // Check for valid device handle
+    if (pctx == nullptr) return CUDA_ERROR_INVALID_VALUE; // Check for valid pointer
+
+    // Check if the primary context is already retained
+    if (driver::devices[dev]->context != nullptr) {
+        *pctx = driver::devices[dev]->context->getContext();
+        return CUDA_SUCCESS;
+    }
+    // Create a new primary context for the device
+    driver::devices[dev]->context = new driver::CUDAContext();
+    driver::devices[dev]->context->create(dev, 0); // Assuming default flags for primary context
+    *pctx = driver::devices[dev]->context->getContext();
+    return CUDA_SUCCESS;
+}
+
 }
