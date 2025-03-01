@@ -2,6 +2,8 @@
 
 using namespace driver;
 
+std::stack<CUDAContext*> driver::contextStack; // Initialize the stack to manage contexts
+
 CUDAContext::CUDAContext() {
     context.launch_id = 0;
     context.minor = 0;
@@ -24,6 +26,7 @@ void CUDAContext::create(CUdevice device, unsigned int flags) {
     // cuCtxCreate(&context, flags, device);
     context.flags = flags;
     context.valid = 1;
+    context.device = device; // Assign the device id to the context
 }
 
 void CUDAContext::destroy() {
@@ -35,4 +38,8 @@ void CUDAContext::destroy() {
 
 CUcontext CUDAContext::getContext() {
     return (&context);
+}
+
+void CUDAContext::setCtx(CUcontext ctx) {
+    context = *static_cast<CUctx_st*>(ctx);
 }

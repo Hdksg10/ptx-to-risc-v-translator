@@ -4,6 +4,7 @@
 #define CUDA_CONTEXT_H
 
 #include <cuda.h>
+#include <stack>
 
 namespace driver{
     class CUDAContext;
@@ -19,6 +20,7 @@ extern "C"{
         unsigned int flags;
         int destroyed;
         int valid;
+        CUdevice device; // device id
         void* outerContex; // pointer to outer CUDAContext instance (always!)
     }; // struct CUctx_st
 }
@@ -30,14 +32,13 @@ namespace driver {
         ~CUDAContext();
         void create(CUdevice device, unsigned int flags);
         void destroy();
-        void push();
-        void pop();
-        void setCurrent();
-        void setCurrent(CUcontext context);
+        void setCtx(CUcontext ctx); // Set the inner context (used in cuCtxSetCurrent)
         CUcontext getContext();
     private:
         CUctx_st context;
     };
+
+    extern std::stack<CUDAContext*> contextStack; // Stack to manage contexts
 } // namespace driver
 
 #endif

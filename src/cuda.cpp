@@ -1,6 +1,7 @@
 /* Implemetion of CUDA Driver API
  * TODO: Line 
 */
+#include "CUDAContext.h"
 #include <cuda.h>
 
 #include <string>
@@ -116,4 +117,56 @@ CUresult CUDAAPI cuDevicePrimaryCtxRetain(CUcontext *pctx, CUdevice dev) {
     return CUDA_SUCCESS;
 }
 
+CUresult CUDAAPI cuCtxCreate(CUcontext *pctx, unsigned int flags, CUdevice dev) {
+    if (driver::driverDeinitialized) return CUDA_ERROR_DEINITIALIZED;
+    if (!driver::driverInitialized) return CUDA_ERROR_NOT_INITIALIZED;
+    if (dev < 0 || dev >= driver::MAX_DEVICES) return CUDA_ERROR_INVALID_DEVICE; // Check for valid device handle
+    if (pctx == nullptr) return CUDA_ERROR_INVALID_VALUE; // Check for valid pointer
+    driver::devices[dev]->context = new driver::CUDAContext();
+    driver::devices[dev]->context->create(dev, flags);
+    *pctx = driver::devices[dev]->context->getContext();
+    return CUDA_SUCCESS;
+}
+
+// Note that we havn't implemented the context stack management yet, so cuCtxSetCurrent will not work as expected.
+CUresult CUDAAPI cuCtxSetCurrent(CUcontext ctx) {
+    if (driver::driverDeinitialized) return CUDA_ERROR_DEINITIALIZED;
+    if (!driver::driverInitialized) return CUDA_ERROR_NOT_INITIALIZED;
+    if (ctx == nullptr) return CUDA_ERROR_INVALID_CONTEXT; // Check for valid context handle
+    auto context = driver::contextStack.top();
+    context->setCtx(ctx);
+    return CUDA_SUCCESS;
+}
+// Note that we havn't implemented the context stack management yet, so cuCtxGetCurrent will not work as expected.
+CUresult CUDAAPI cuCtxGetCurrent(CUcontext *pctx) {
+    if (driver::driverDeinitialized) return CUDA_ERROR_DEINITIALIZED;
+    if (!driver::driverInitialized) return CUDA_ERROR_NOT_INITIALIZED;
+    if (pctx == nullptr) return CUDA_ERROR_INVALID_VALUE; // Check for valid pointer
+    if (driver::contextStack.empty()) {
+        *pctx = nullptr;
+        return CUDA_SUCCESS;
+    }
+    auto context = driver::contextStack.top();
+    *pctx = context->getContext();
+    return CUDA_SUCCESS;
+}
+
+CUresult CUDAAPI cuCtxGetDevice(CUdevice *device) {
+    if (driver::driverDeinitialized) return CUDA_ERROR_DEINITIALIZED;
+    if (!driver::driverInitialized) return CUDA_ERROR_NOT_INITIALIZED;
+    if (device == nullptr) return CUDA_ERROR_INVALID_VALUE; // Check for valid pointer
+    if (driver::contextStack.empty()) return CUDA_ERROR_INVALID_CONTEXT;
+    auto context = driver::contextStack.top();
+    *device = context->getContext()->device;
+    return CUDA_SUCCESS;
+}
+
+CUresult CUDAAPI cuCtxDestroy(CUcontext ctx) {
+    if (driver::driverDeinitialized) return CUDA_ERROR_DEINITIALIZED;
+    if (!driver::driverInitialized) return CUDA_ERROR_NOT_INITIALIZED;
+    if (ctx == nullptr) return CUDA_ERROR_INVALID_VALUE; // Check for valid context
+    ctx->destroyed = 1;
+    ctx->valid = 0;
+    return CUDA_SUCCESS;
+}
 }

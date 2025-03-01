@@ -34,7 +34,13 @@ namespace driver {
         const static CUuuid_st uuid;
         constexpr static size_t totalMemBytes = 4294967296; // 4 * 1024 * 1024 * 1024 Bytes
     public:
-        driver::CUDAContext* context; // primary context of device
+        /* Primary context of device
+         *
+         * NOTE: Since the device is emulated by our translator, we ensure that only current process can access the emulated device, and we assume that we only have one context in program, so we don't need to manage multiple contexts, and we don't need to implement push and pop context functions.
+         *
+         * The primary context is created when the device is initialized and destroyed when the device is shutdown. The primary context is always set as the current context.
+         */
+        driver::CUDAContext* context; 
     };
     extern EmulatedCUDADevice* devices[MAX_DEVICES];
     extern bool driverInitialized;
