@@ -9,6 +9,7 @@ file(GLOB CUDA_SRC_FILES
     "src/cuda.cpp"
     "src/cuda_driver.cpp"
     "src/EmulatedCUDADevice.cpp"
+    "src/CUDAContext.cpp"
     )
 add_library(cuda_riscv SHARED ${CUDA_SRC_FILES})
 target_include_directories(cuda_riscv PUBLIC include include/cuda/include)
