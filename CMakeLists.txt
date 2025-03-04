@@ -7,7 +7,7 @@ set(CMAKE_CXX_STANDARD 17)
 
 file(GLOB CUDA_SRC_FILES 
     "src/cuda.cpp"
-    "src/cuda_driver.cpp"
+    "src/cuda_runtime.cpp"
     "src/EmulatedCUDADevice.cpp"
     "src/CUDAContext.cpp"
     "src/Interface.cpp"
