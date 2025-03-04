@@ -1,6 +1,6 @@
 
 #include <EmulatedCUDADevice.h>
-using namespace driver;
+namespace driver{
 
 // Driver global variables initialization
 EmulatedCUDADevice* devices[MAX_DEVICES] = {nullptr}; // Initialize all device pointers to nullptr
@@ -42,3 +42,4 @@ int EmulatedCUDADevice::getAttribute(CUdevice_attribute attrib) {
     return pi;
 }
 
+} // namespace driver
