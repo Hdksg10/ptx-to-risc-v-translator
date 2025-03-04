@@ -10,7 +10,7 @@ bool driverDeinitialized = false;
 // Static member initialization
 const std::string EmulatedCUDADevice::name = "EmulatedCUDADevice";
 
-const static CUuuid_st uuid = {static_cast<char>(0xd2), static_cast<char>(0xdf), static_cast<char>(0x96), static_cast<char>(0xa6), 0x39, 0x2f, 0x29, 0x5c, 0x03, 0x78, static_cast<char>(0xe8), 0x0f, 0x22, static_cast<char>(0xd3), static_cast<char>(0x99), 0x7b
+const CUuuid_st EmulatedCUDADevice::uuid = {static_cast<char>(0xd2), static_cast<char>(0xdf), static_cast<char>(0x96), static_cast<char>(0xa6), 0x39, 0x2f, 0x29, 0x5c, 0x03, 0x78, static_cast<char>(0xe8), 0x0f, 0x22, static_cast<char>(0xd3), static_cast<char>(0x99), 0x7b
 }; // TODO: random generate uuid
 
 int EmulatedCUDADevice::getAttribute(CUdevice_attribute attrib) {
