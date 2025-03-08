@@ -5,6 +5,7 @@
 
 #include <cuda.h>
 #include <stack>
+#include <ocelot/ir/Module.h>
 
 namespace driver{
     class CUDAContext;

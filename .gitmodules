@@ -1,3 +1,7 @@
 [submodule "deps/3rd/cricket"]
 	path = deps/3rd/cricket
 	url = git@github.com:Hdksg10/cricket.git
+[submodule "deps/3rd/gpuocelot"]
+	path = deps/3rd/gpuocelot
+	url = git@github.com:Hdksg10/gpuocelot.git
+	branch = ptx5.0-translator
