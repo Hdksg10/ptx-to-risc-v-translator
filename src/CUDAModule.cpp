@@ -29,6 +29,6 @@ CUfunction CUDAModule::getFunction(const char* name) {
         return nullptr;
     }
     CUDAFunction cudaFunc(func);
-    functions[name] = cudaFunc;
-    return cudaFunc.getFunctionPointer();
+    functions.emplace(name, CUDAFunction(func)); 
+    return functions.at(name).getFunctionPointer();
 }
