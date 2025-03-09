@@ -16,6 +16,7 @@ struct CUfunc_st {
 namespace driver {
     class CUDAFunction {
     public:
+        CUDAFunction(const CUDAFunction& other);
         CUDAFunction(ir::PTXKernel* kernel);
         CUfunction getFunctionPointer();
         ir::PTXKernel* getKernel();
