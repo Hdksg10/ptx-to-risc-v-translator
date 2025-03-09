@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD 17)
 # Build Ocelot
 set(OCELOT_PATH ${CMAKE_SOURCE_DIR}/deps/3rd/gpuocelot/ocelot)
 set(OCELOT_BUILD_PATH ${OCELOT_PATH}/build)
-add_subdirectory(${OCELOT_PATH}, ${OCELOT_BUILD_PATH}) 
+add_subdirectory(${OCELOT_PATH} ${OCELOT_BUILD_PATH}) 
 
 # Build cuda-risc-v api
 
