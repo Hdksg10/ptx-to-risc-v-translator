@@ -60,3 +60,19 @@ extern "C" CUresult CUDAAPI cuCtxGetDevice(CUdevice *device) {
 extern "C" CUresult CUDAAPI cuCtxDestroy(CUcontext ctx) {
     return cuCtxDestroy_cpp(ctx);
 }
+
+extern "C" CUresult CUDAAPI cuModuleLoad(CUmodule *module, const char *fname) {
+    return cuModuleLoad_cpp(module, fname);
+}
+
+extern "C" CUresult CUDAAPI cuModuleLoadData(CUmodule *module, const void *image) {
+    return cuModuleLoadData_cpp(module, image);
+}
+
+extern "C" CUresult CUDAAPI cuModuleGetFunction(CUfunction *hfunc, CUmodule hmod, const char *name) {
+    return cuModuleGetFunction_cpp(hfunc, hmod, name);
+}
+
+extern "C" CUresult CUDAAPI cuModuleUnload(CUmodule hmod) {
+    return cuModuleUnload_cpp(hmod);
+}

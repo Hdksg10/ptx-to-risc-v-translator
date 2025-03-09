@@ -163,6 +163,62 @@ CUresult CUDAAPI cuCtxDestroy_cpp(CUcontext ctx) {
     return CUDA_SUCCESS;
 }
 
+CUresult CUDAAPI cuModuleLoad_cpp(CUmodule *module, const char *fname) 
+{
+    if (driver::driverDeinitialized) return CUDA_ERROR_DEINITIALIZED;
+    if (!driver::driverInitialized) return CUDA_ERROR_NOT_INITIALIZED;
+    if (module == nullptr || fname == nullptr) return CUDA_ERROR_INVALID_VALUE;
+    try {
+        struct CUmod_st *mod = new struct CUmod_st();
+        auto inner_module = new driver::CUDAModule();
+        if (!(inner_module->load(fname))) {
+            delete inner_module;
+            delete mod;
+            return CUDA_ERROR_FILE_NOT_FOUND;
+        }
+        mod->module = inner_module;
+        *module = mod;
+        return CUDA_SUCCESS;
+    } catch (const std::exception& e) {
+        return CUDA_ERROR_FILE_NOT_FOUND;
+    }
+}
+
+CUresult CUDAAPI cuModuleUnload_cpp(CUmodule hmod) 
+{
+    if (driver::driverDeinitialized) return CUDA_ERROR_DEINITIALIZED;
+    if (!driver::driverInitialized) return CUDA_ERROR_NOT_INITIALIZED;
+    if (hmod == nullptr) return CUDA_ERROR_INVALID_VALUE;
+    try {
+        driver::CUDAModule *inner_module = static_cast<driver::CUDAModule*>(hmod->module);
+        inner_module->unload();
+        delete inner_module;
+        delete hmod;
+        return CUDA_SUCCESS;
+    } catch (const std::exception& e) {
+        return CUDA_ERROR_UNKNOWN;
+    }
+}
+
+CUresult CUDAAPI cuModuleGetFunction_cpp(CUfunction *hfunc, CUmodule hmod, const char *name) 
+{
+    if (driver::driverDeinitialized) return CUDA_ERROR_DEINITIALIZED;
+    if (!driver::driverInitialized) return CUDA_ERROR_NOT_INITIALIZED;
+    if (hmod == nullptr || hfunc == nullptr || name == nullptr) return CUDA_ERROR_INVALID_VALUE;
+    try {
+        driver::CUDAModule *inner_module = static_cast<driver::CUDAModule*>(hmod->module);
+        *hfunc = inner_module->getFunction(name);
+        return CUDA_SUCCESS;
+    } catch (const std::exception& e) {
+        return CUDA_ERROR_UNKNOWN;
+    }
+}
+
+CUresult CUDAAPI cuModuleLoadData_cpp(CUmodule *module, const void *image) {
+    // Placeholder implementation
+    return CUDA_ERROR_NOT_SUPPORTED;
+}
+
 // CUDA Runtime API
 cudaError_t CUDARTAPI cudaDeviceCanAccessPeer_cpp(int *canAccessPeer, int device, int peerDevice) 
 {

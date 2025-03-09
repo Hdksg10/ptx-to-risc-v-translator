@@ -6,6 +6,8 @@
 #include <cuda_runtime.h>
 #include <CUDAContext.h>
 #include <EmulatedCUDADevice.h>
+#include <CUDAModule.h>
+#include <CUDAFunction.h>
 
 // CUDA Driver API
 CUresult CUDAAPI cuDeviceGetCount_cpp(int *count);
@@ -22,6 +24,11 @@ CUresult CUDAAPI cuCtxSetCurrent_cpp(CUcontext ctx);
 CUresult CUDAAPI cuCtxGetCurrent_cpp(CUcontext *pctx);
 CUresult CUDAAPI cuCtxGetDevice_cpp(CUdevice *device);
 CUresult CUDAAPI cuCtxDestroy_cpp(CUcontext ctx);
+
+CUresult CUDAAPI cuModuleLoad_cpp(CUmodule *module, const char *fname);
+CUresult CUDAAPI cuModuleLoadData_cpp(CUmodule *module, const void *image);
+CUresult CUDAAPI cuModuleUnload_cpp(CUmodule hmod);
+CUresult CUDAAPI cuModuleGetFunction_cpp(CUfunction *hfunc, CUmodule hmod, const char *name);
 
 // CUDA Runtime API
 cudaError_t CUDARTAPI cudaDeviceCanAccessPeer_cpp(int *canAccessPeer, int device, int peerDevice);

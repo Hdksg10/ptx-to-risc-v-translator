@@ -1,0 +1,15 @@
+#include <CUDAFunction.h>
+
+using namespace driver;
+
+CUDAFunction::CUDAFunction(ir::PTXKernel* kernel) : kernel(kernel) {
+    function.outerKernel = this; // Set the outerKernel pointer to this instance. This is always done.
+}
+
+ir::PTXKernel* CUDAFunction::getKernel() {
+    return kernel;
+}
+
+CUfunction CUDAFunction::getFunctionPointer() {
+    return &function;
+}
