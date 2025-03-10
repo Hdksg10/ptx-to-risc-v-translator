@@ -2,6 +2,8 @@
 #define INTERFACE_H
 
 #include <cstring>
+#include <cstdlib>
+#include <cstring>
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <CUDAContext.h>
@@ -29,6 +31,12 @@ CUresult CUDAAPI cuModuleLoad_cpp(CUmodule *module, const char *fname);
 CUresult CUDAAPI cuModuleLoadData_cpp(CUmodule *module, const void *image);
 CUresult CUDAAPI cuModuleUnload_cpp(CUmodule hmod);
 CUresult CUDAAPI cuModuleGetFunction_cpp(CUfunction *hfunc, CUmodule hmod, const char *name);
+
+// driver memory managment
+CUresult cuMemAlloc_cpp(CUdeviceptr* dptr, size_t bytesize);
+CUresult cuMemFree_cpp(CUdeviceptr dptr);
+CUresult cuMemcpyHtoD_cpp(CUdeviceptr dstDevice, const void *srcHost, size_t ByteCount);
+CUresult cuMemcpyDtoH_cpp(void *dstHost, CUdeviceptr srcDevice, size_t ByteCount);
 
 // CUDA Runtime API
 cudaError_t CUDARTAPI cudaDeviceCanAccessPeer_cpp(int *canAccessPeer, int device, int peerDevice);

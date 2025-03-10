@@ -9,7 +9,7 @@ CUDAContext::CUDAContext() {
     context.minor = 0;
     context.flags = 0;
     context.destroyed = 0;
-    context.outerContex = this;
+    context.outerContext = this;
     
     context.valid = 0;
 }
@@ -42,4 +42,38 @@ CUcontext CUDAContext::getContext() {
 
 void CUDAContext::setCtx(CUcontext ctx) {
     context = *static_cast<CUctx_st*>(ctx);
+}
+
+bool CUDAContext::allocate(CUdeviceptr* dptr, size_t size) {
+    CUdeviceptr ptr = static_cast<unsigned long long>(reinterpret_cast<uintptr_t>(malloc(size)));
+    if (ptr) {
+        allocations[ptr] = size;
+        *dptr = ptr;
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+
+bool CUDAContext::free(CUdeviceptr dptr) {
+    if (allocations.find(dptr) != allocations.end()) {
+        std::free(reinterpret_cast<void*>(static_cast<uintptr_t>(dptr)));
+        allocations.erase(dptr);
+        return true;
+    }
+    return false;
+}
+
+size_t CUDAContext::getAllocatedSize(CUdeviceptr ptr) const {
+    if (allocations.find(ptr) != allocations.end()) {
+        return allocations.at(ptr);
+    }
+    else {
+        return 0;
+    }
+}
+
+bool CUDAContext::valid() const {
+    return context.valid && !context.destroyed; // Check if the context is valid and not destroyed
 }

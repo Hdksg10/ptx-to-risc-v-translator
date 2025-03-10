@@ -5,6 +5,8 @@
 
 #include <cuda.h>
 #include <stack>
+#include <unordered_map>
+#include <cstdlib>
 
 namespace driver{
     class CUDAContext;
@@ -21,7 +23,7 @@ extern "C"{
         int destroyed;
         int valid;
         CUdevice device; // device id
-        void* outerContex; // pointer to outer CUDAContext instance (always!)
+        void* outerContext; // pointer to outer CUDAContext instance (always!)
     }; // struct CUctx_st
 }
 
@@ -34,8 +36,13 @@ namespace driver {
         void destroy();
         void setCtx(CUcontext ctx); // Set the inner context (used in cuCtxSetCurrent)
         CUcontext getContext();
+        bool allocate(CUdeviceptr* dptr, size_t size); // Allocate device memory and return a pointer to it
+        bool free(CUdeviceptr dptr); // Free device memory
+        size_t getAllocatedSize(CUdeviceptr ptr) const; // Get the size of an allocated device memory block
+        bool valid() const; // Check if the context is valid
     private:
         CUctx_st context;
+        std::unordered_map<CUdeviceptr, size_t> allocations; // Map to track device memory allocations and their sizes
     };
 
     extern std::stack<CUDAContext*> contextStack; // Stack to manage contexts

@@ -1,5 +1,3 @@
-#include "EmulatedCUDADevice.h"
-#include "cuda.h"
 #include <Interface.h>
 
 CUresult CUDAAPI cuDeviceGetCount_cpp(int *count) {
@@ -107,6 +105,8 @@ CUresult CUDAAPI cuDevicePrimaryCtxRetain_cpp(CUcontext *pctx, CUdevice dev) {
     driver::devices[dev]->context = new driver::CUDAContext();
     driver::devices[dev]->context->create(dev, 0); // Assuming default flags for primary context
     *pctx = driver::devices[dev]->context->getContext();
+
+    driver::contextStack.push(driver::devices[dev]->context);
     return CUDA_SUCCESS;
 }
 
@@ -126,8 +126,8 @@ CUresult CUDAAPI cuCtxSetCurrent_cpp(CUcontext ctx) {
     if (driver::driverDeinitialized) return CUDA_ERROR_DEINITIALIZED;
     if (!driver::driverInitialized) return CUDA_ERROR_NOT_INITIALIZED;
     if (ctx == nullptr) return CUDA_ERROR_INVALID_CONTEXT; // Check for valid context handle
-    auto context = driver::contextStack.top();
-    context->setCtx(ctx);
+    auto context = static_cast<driver::CUDAContext*>(ctx->outerContext);
+    driver::contextStack.push(context);
     return CUDA_SUCCESS;
 }
 // Note that we havn't implemented the context stack management yet, so cuCtxGetCurrent will not work as expected.
@@ -219,6 +219,66 @@ CUresult CUDAAPI cuModuleLoadData_cpp(CUmodule *module, const void *image) {
     return CUDA_ERROR_NOT_SUPPORTED;
 }
 
+CUresult cuMemAlloc_cpp(CUdeviceptr* dptr, size_t bytesize)
+{
+    if (driver::driverDeinitialized) return CUDA_ERROR_DEINITIALIZED;
+    if (!driver::driverInitialized) return CUDA_ERROR_NOT_INITIALIZED;
+    if (dptr == nullptr || bytesize == 0) return CUDA_ERROR_INVALID_VALUE;
+
+    // get current context;
+    if (driver::contextStack.empty()) return CUDA_ERROR_INVALID_CONTEXT;
+    auto context = driver::contextStack.top();
+    if (context == nullptr || !(context->valid())) return CUDA_ERROR_INVALID_CONTEXT;
+    if (!context->allocate(dptr, bytesize)) return CUDA_ERROR_OUT_OF_MEMORY;
+    return CUDA_SUCCESS;
+}
+
+CUresult cuMemFree_cpp(CUdeviceptr dptr) 
+{
+    if (driver::driverDeinitialized) return CUDA_ERROR_DEINITIALIZED;
+    if (!driver::driverInitialized) return CUDA_ERROR_NOT_INITIALIZED;
+    if (dptr == 0) return CUDA_ERROR_INVALID_VALUE;
+
+    // get current context;
+    if (driver::contextStack.empty()) return CUDA_ERROR_INVALID_CONTEXT;
+    auto context = driver::contextStack.top();
+    if (context == nullptr || !(context->valid())) return CUDA_ERROR_INVALID_CONTEXT;
+    if (!context->free(dptr)) return CUDA_ERROR_INVALID_VALUE;
+    return CUDA_SUCCESS;
+}
+CUresult cuMemcpyHtoD_cpp(CUdeviceptr dstDevice, const void *srcHost, size_t ByteCount) 
+{
+    if (driver::driverDeinitialized) return CUDA_ERROR_DEINITIALIZED;
+    if (!driver::driverInitialized) return CUDA_ERROR_NOT_INITIALIZED;
+    if (dstDevice == 0 || srcHost == nullptr || ByteCount == 0) return CUDA_ERROR_INVALID_VALUE;
+
+    // get current context;
+    if (driver::contextStack.empty()) return CUDA_ERROR_INVALID_CONTEXT;
+    auto context = driver::contextStack.top();
+    if (context == nullptr || !(context->valid())) return CUDA_ERROR_INVALID_CONTEXT;
+
+    // check device memory allocation
+    if (!context->getAllocatedSize(dstDevice)) return CUDA_ERROR_INVALID_VALUE;
+    std::memcpy(reinterpret_cast<void*>(static_cast<uintptr_t>(dstDevice)), srcHost, ByteCount);
+    return CUDA_SUCCESS;
+}
+CUresult cuMemcpyDtoH_cpp(void *dstHost, CUdeviceptr srcDevice, size_t ByteCount)
+{
+    if (driver::driverDeinitialized) return CUDA_ERROR_DEINITIALIZED;
+    if (!driver::driverInitialized) return CUDA_ERROR_NOT_INITIALIZED;
+    if (srcDevice == 0 || dstHost == nullptr || ByteCount == 0) return CUDA_ERROR_INVALID_VALUE;
+
+    // get current context;
+    if (driver::contextStack.empty()) return CUDA_ERROR_INVALID_CONTEXT;
+    auto context = driver::contextStack.top();
+    if (context == nullptr || !(context->valid())) return CUDA_ERROR_INVALID_CONTEXT;
+
+    // check device memory allocation
+    if (!context->getAllocatedSize(srcDevice)) return CUDA_ERROR_INVALID_VALUE;
+    std::memcpy(dstHost, reinterpret_cast<void*>(static_cast<uintptr_t>(srcDevice)), ByteCount);
+    return CUDA_SUCCESS;
+}
+
 // CUDA Runtime API
 cudaError_t CUDARTAPI cudaDeviceCanAccessPeer_cpp(int *canAccessPeer, int device, int peerDevice) 
 {
@@ -252,7 +312,7 @@ cudaError_t CUDARTAPI cudaSetDevice_cpp(int device)
         return cudaErrorUnknown;
     }
     // set device primary context
-    driver::devices[device]->context = static_cast<driver::CUDAContext*>(ctx->outerContex);
+    driver::devices[device]->context = static_cast<driver::CUDAContext*>(ctx->outerContext);
     return cudaSuccess;  // return success for the placeholder implementation
 }
 

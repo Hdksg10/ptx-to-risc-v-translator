@@ -1,4 +1,3 @@
-#include "cuda.h"
 #include <CUDAModule.h>
 
 using namespace driver;

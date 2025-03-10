@@ -76,3 +76,19 @@ extern "C" CUresult CUDAAPI cuModuleGetFunction(CUfunction *hfunc, CUmodule hmod
 extern "C" CUresult CUDAAPI cuModuleUnload(CUmodule hmod) {
     return cuModuleUnload_cpp(hmod);
 }
+
+extern "C" CUresult CUDAAPI cuMemAlloc(CUdeviceptr* dptr, size_t bytesize) {
+    return cuMemAlloc_cpp(dptr, bytesize);
+}
+
+extern "C" CUresult CUDAAPI cuMemFree(CUdeviceptr dptr) {
+    return cuMemFree_cpp(dptr);
+}
+
+extern "C" CUresult CUDAAPI cuMemcpyHtoD(CUdeviceptr dstDevice, const void *srcHost, size_t ByteCount) {
+    return cuMemcpyHtoD_cpp(dstDevice, srcHost, ByteCount);
+}
+
+extern "C" CUresult CUDAAPI cuMemcpyDtoH(void *dstHost, CUdeviceptr srcDevice, size_t ByteCount) {
+    return cuMemcpyDtoH_cpp(dstHost, srcDevice, ByteCount);
+}
