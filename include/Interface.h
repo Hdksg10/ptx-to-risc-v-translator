@@ -38,6 +38,8 @@ CUresult cuMemFree_cpp(CUdeviceptr dptr);
 CUresult cuMemcpyHtoD_cpp(CUdeviceptr dstDevice, const void *srcHost, size_t ByteCount);
 CUresult cuMemcpyDtoH_cpp(void *dstHost, CUdeviceptr srcDevice, size_t ByteCount);
 
+// kernel launch
+CUresult CUDAAPI cuLaunchKernel_cpp(CUfunction f, unsigned int gridDimX, unsigned int gridDimY, unsigned int gridDimZ, unsigned int blockDimX, unsigned int blockDimY, unsigned int blockDimZ, unsigned int sharedMemBytes, CUstream hStream, void **kernelParams, void **extra);
 // CUDA Runtime API
 cudaError_t CUDARTAPI cudaDeviceCanAccessPeer_cpp(int *canAccessPeer, int device, int peerDevice);
 cudaError_t CUDARTAPI cudaSetDevice_cpp(int device);

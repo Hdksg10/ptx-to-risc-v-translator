@@ -11,6 +11,7 @@ CUresult CUDAAPI cuDeviceGetCount_cpp(int *count) {
 }
 
 CUresult CUDAAPI cuInit_cpp(unsigned int Flags) {
+    std::cout << "===== RISC-V CUDA Library! =====" << std::endl;
     // Implementation to initialize the CUDA driver
     // This is a placeholder implementation
     if (driver::driverInitialized) return CUDA_SUCCESS; // do nothing
@@ -169,6 +170,9 @@ CUresult CUDAAPI cuModuleLoad_cpp(CUmodule *module, const char *fname)
     if (!driver::driverInitialized) return CUDA_ERROR_NOT_INITIALIZED;
     if (module == nullptr || fname == nullptr) return CUDA_ERROR_INVALID_VALUE;
     try {
+        if (driver::contextStack.empty()) return CUDA_ERROR_INVALID_CONTEXT;
+        auto context = driver::contextStack.top();
+        if (context == nullptr || !(context->valid())) return CUDA_ERROR_INVALID_CONTEXT; // Check for valid context
         struct CUmod_st *mod = new struct CUmod_st();
         auto inner_module = new driver::CUDAModule();
         if (!(inner_module->load(fname))) {
@@ -176,7 +180,9 @@ CUresult CUDAAPI cuModuleLoad_cpp(CUmodule *module, const char *fname)
             delete mod;
             return CUDA_ERROR_FILE_NOT_FOUND;
         }
+        driver::devices[context->getContext()->device]->load(inner_module);
         mod->module = inner_module;
+        mod->context = context;
         *module = mod;
         return CUDA_SUCCESS;
     } catch (const std::exception& e) {
@@ -224,7 +230,6 @@ CUresult cuMemAlloc_cpp(CUdeviceptr* dptr, size_t bytesize)
     if (driver::driverDeinitialized) return CUDA_ERROR_DEINITIALIZED;
     if (!driver::driverInitialized) return CUDA_ERROR_NOT_INITIALIZED;
     if (dptr == nullptr || bytesize == 0) return CUDA_ERROR_INVALID_VALUE;
-
     // get current context;
     if (driver::contextStack.empty()) return CUDA_ERROR_INVALID_CONTEXT;
     auto context = driver::contextStack.top();
@@ -276,6 +281,32 @@ CUresult cuMemcpyDtoH_cpp(void *dstHost, CUdeviceptr srcDevice, size_t ByteCount
     // check device memory allocation
     if (!context->getAllocatedSize(srcDevice)) return CUDA_ERROR_INVALID_VALUE;
     std::memcpy(dstHost, reinterpret_cast<void*>(static_cast<uintptr_t>(srcDevice)), ByteCount);
+    return CUDA_SUCCESS;
+}
+
+CUresult CUDAAPI cuLaunchKernel_cpp(CUfunction f,
+    unsigned int gridDimX,
+    unsigned int gridDimY,
+    unsigned int gridDimZ,
+    unsigned int blockDimX,
+    unsigned int blockDimY,
+    unsigned int blockDimZ,
+    unsigned int sharedMemBytes,
+    CUstream hStream,
+    void **kernelParams,
+    void **extra)
+{
+    if (driver::driverDeinitialized) return CUDA_ERROR_DEINITIALIZED;
+    if (!driver::driverInitialized) return CUDA_ERROR_NOT_INITIALIZED;
+    if (f == nullptr) return CUDA_ERROR_INVALID_VALUE;
+
+    // get current context;
+    if (driver::contextStack.empty()) return CUDA_ERROR_INVALID_CONTEXT;
+    auto context = driver::contextStack.top();
+    if (context == nullptr || !(context->valid())) return CUDA_ERROR_INVALID_CONTEXT;
+    
+    // launch kernel
+    driver::devices[context->getContext()->device]->launchKernel(f, gridDimX, gridDimY, gridDimZ, blockDimX, blockDimY, blockDimZ, sharedMemBytes, hStream, kernelParams, extra);
     return CUDA_SUCCESS;
 }
 

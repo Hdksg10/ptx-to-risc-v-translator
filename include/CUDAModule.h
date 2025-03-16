@@ -14,6 +14,7 @@ namespace driver {
 extern "C" {
     struct CUmod_st {
         void* module; // Pointer to the internal module representation(CUDA module instance)
+        void* context; // Pointer to the context(CUDAContext instance) associated with this module
     };
 }
 
