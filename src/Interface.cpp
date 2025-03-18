@@ -1,3 +1,4 @@
+#include "cuda.h"
 #include <Interface.h>
 
 CUresult CUDAAPI cuDeviceGetCount_cpp(int *count) {
@@ -175,7 +176,8 @@ CUresult CUDAAPI cuModuleLoad_cpp(CUmodule *module, const char *fname)
         if (context == nullptr || !(context->valid())) return CUDA_ERROR_INVALID_CONTEXT; // Check for valid context
         struct CUmod_st *mod = new struct CUmod_st();
         auto inner_module = new driver::CUDAModule();
-        if (!(inner_module->load(fname))) {
+        std::string fname_str(fname); // Convert const char* to std::string 
+        if (!(inner_module->load(fname_str))) {
             delete inner_module;
             delete mod;
             return CUDA_ERROR_FILE_NOT_FOUND;
@@ -186,7 +188,7 @@ CUresult CUDAAPI cuModuleLoad_cpp(CUmodule *module, const char *fname)
         *module = mod;
         return CUDA_SUCCESS;
     } catch (const std::exception& e) {
-        return CUDA_ERROR_FILE_NOT_FOUND;
+        return CUDA_ERROR_UNSUPPORTED_PTX_VERSION;
     }
 }
 
@@ -221,8 +223,28 @@ CUresult CUDAAPI cuModuleGetFunction_cpp(CUfunction *hfunc, CUmodule hmod, const
 }
 
 CUresult CUDAAPI cuModuleLoadData_cpp(CUmodule *module, const void *image) {
-    // Placeholder implementation
-    return CUDA_ERROR_NOT_SUPPORTED;
+    if (driver::driverDeinitialized) return CUDA_ERROR_DEINITIALIZED;
+    if (!driver::driverInitialized) return CUDA_ERROR_NOT_INITIALIZED;
+    if (module == nullptr || image == nullptr) return CUDA_ERROR_INVALID_VALUE;
+    try {
+        if (driver::contextStack.empty()) return CUDA_ERROR_INVALID_CONTEXT;
+        auto context = driver::contextStack.top();
+        if (context == nullptr || !(context->valid())) return CUDA_ERROR_INVALID_CONTEXT; // Check for valid context
+        struct CUmod_st *mod = new struct CUmod_st();
+        auto inner_module = new driver::CUDAModule();
+        if (!(inner_module->load(image))) {
+            delete inner_module;
+            delete mod;
+            return CUDA_ERROR_FILE_NOT_FOUND;
+        }
+        driver::devices[context->getContext()->device]->load(inner_module);
+        mod->module = inner_module;
+        mod->context = context;
+        *module = mod;
+        return CUDA_SUCCESS;
+    } catch (const std::exception& e) {
+        return CUDA_ERROR_FILE_NOT_FOUND;
+    }
 }
 
 CUresult cuMemAlloc_cpp(CUdeviceptr* dptr, size_t bytesize)

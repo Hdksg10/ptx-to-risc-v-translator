@@ -5,3 +5,6 @@
 	path = deps/3rd/gpuocelot
 	url = git@github.com:Hdksg10/gpuocelot.git
 	branch = ptx5.0-translator
+[submodule "deps/3rd/decompression"]
+	path = deps/3rd/decompression
+	url = git@github.com:Hdksg10/cuda-fatbin-decompression.git

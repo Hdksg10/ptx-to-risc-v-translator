@@ -3,7 +3,10 @@
 #include <cuda.h>
 #include <string>
 #include <unordered_map>
+#include <log.h>
 #include <CUDAFunction.h>
+
+#include <fatbin-decompress.h>
 
 #include <ocelot/ir/Module.h>
 
@@ -22,6 +25,8 @@ namespace driver {
     class CUDAModule {
     public:
         bool load(const std::string& path);
+        // load module from cubin or fatbin as output by nvcc, or a NULL-terminated PTX, either as output by nvcc or hand-written.
+        bool load(const void* image);
         void unload();
         ir::Module* getModule();
         CUfunction getFunction(const char* name); // Retrieve a function by name

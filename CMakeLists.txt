@@ -13,6 +13,12 @@ option(BUILD_TEST "BUILD TESTS" ON)
 set(OCELOT_PATH ${CMAKE_SOURCE_DIR}/deps/3rd/gpuocelot/ocelot)
 set(OCELOT_BUILD_PATH ${OCELOT_PATH}/build)
 add_subdirectory(${OCELOT_PATH} ${OCELOT_BUILD_PATH}) 
+
+# Build fatbin decompression
+set(FATBIN_PATH ${CMAKE_SOURCE_DIR}/deps/3rd/decompression)
+set(FATBIN_BUILD_PATH ${FATBIN_PATH}/build)
+add_subdirectory(${FATBIN_PATH} ${FATBIN_BUILD_PATH}) 
+
 # set(OCELOT_LIB     
 #     gpuocelot_analysis
 #     gpuocelot_api
@@ -39,7 +45,9 @@ file(GLOB CUDA_SRC_FILES
 add_library(cuda_riscv SHARED ${CUDA_SRC_FILES})
 target_include_directories(cuda_riscv PUBLIC include include/cuda/include)
 target_include_directories(cuda_riscv PUBLIC ${OCELOT_PATH}/include)
+target_include_directories(cuda_riscv PUBLIC ${FATBIN_PATH})
 target_link_libraries(cuda_riscv PRIVATE dl pthread)
+target_link_libraries(cuda_riscv PRIVATE fatbin)
 
 # target_link_libraries(cuda_riscv PRIVATE ${OCELOT_LIB})
 target_link_libraries(cuda_riscv PRIVATE
@@ -79,6 +87,6 @@ if (BUILD_TEST)
     #         gpuocelot_translator
     #         gpuocelot_util
     #     )
-    target_link_libraries(test cuda_riscv)
+    target_link_libraries(test PRIVATE cuda_riscv)
 
 endif()
