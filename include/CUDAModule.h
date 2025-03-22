@@ -3,6 +3,8 @@
 #include <cuda.h>
 #include <string>
 #include <unordered_map>
+#include <filesystem>
+#include <fstream>
 #include <log.h>
 #include <CUDAFunction.h>
 

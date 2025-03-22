@@ -39,12 +39,11 @@ void EmulatedCUDADevice::launchKernel(CUfunction f, unsigned int  gridDimX, unsi
     std::cout << "log1" << std::endl;
     for (auto argument = ptxKernel->arguments.begin(); argument != ptxKernel->arguments.end(); ++argument)
     {
-        size_t argSize = argument->getElementSize();
+        size_t argSize = argument->getAlignment();
         std::memcpy(paramsBuffer + size, kernelParams[index], argSize);
         size += argSize;
         index++;
     }
-    std::cout << "log2" << std::endl;
     device.launch(module->id(), kernel->getName(), grid, block, sharedMemBytes, paramsBuffer, size);
     std::cout << "log3" << std::endl;
     // delete[] paramsBuffer;

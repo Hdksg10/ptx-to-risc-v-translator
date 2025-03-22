@@ -1,5 +1,22 @@
+#include "EmulatedCUDADevice.h"
 #include "cuda.h"
+#include "driver_types.h"
 #include <Interface.h>
+#include <cstdint>
+
+
+static cudaError_t __driverErrorToRuntime(CUresult err) {
+    switch (err) {
+        case CUDA_SUCCESS: return cudaSuccess;
+        case CUDA_ERROR_INVALID_VALUE: return cudaErrorInvalidValue;
+        case CUDA_ERROR_OUT_OF_MEMORY: return cudaErrorMemoryAllocation;
+        case CUDA_ERROR_NOT_INITIALIZED: return cudaErrorInitializationError ;
+        case CUDA_ERROR_DEINITIALIZED: return cudaErrorInitializationError ;
+        case CUDA_ERROR_NO_DEVICE: return cudaErrorNoDevice;
+        case CUDA_ERROR_INVALID_CONTEXT: return cudaErrorIncompatibleDriverContext;
+        default: return cudaErrorUnknown;
+    }
+}
 
 CUresult CUDAAPI cuDeviceGetCount_cpp(int *count) {
     // Implementation to get the number of CUDA devices
@@ -15,6 +32,7 @@ CUresult CUDAAPI cuInit_cpp(unsigned int Flags) {
     std::cout << "===== RISC-V CUDA Library! =====" << std::endl;
     // Implementation to initialize the CUDA driver
     // This is a placeholder implementation
+    LOG(LOG_LEVEL_DEBUG, "DEBUG", "Initializing CUDA driver with flags: %u", Flags);
     if (driver::driverInitialized) return CUDA_SUCCESS; // do nothing
     for (int i = 0; i < driver::MAX_DEVICES; i++) {
         driver::devices[i] = new driver::EmulatedCUDADevice();
@@ -243,7 +261,8 @@ CUresult CUDAAPI cuModuleLoadData_cpp(CUmodule *module, const void *image) {
         *module = mod;
         return CUDA_SUCCESS;
     } catch (const std::exception& e) {
-        return CUDA_ERROR_FILE_NOT_FOUND;
+        std::cout << e.what() << std::endl;
+        return CUDA_ERROR_UNKNOWN;
     }
 }
 
@@ -306,6 +325,23 @@ CUresult cuMemcpyDtoH_cpp(void *dstHost, CUdeviceptr srcDevice, size_t ByteCount
     return CUDA_SUCCESS;
 }
 
+CUresult cuMemsetD32_cpp(CUdeviceptr dstDevice, unsigned int ui, size_t N) 
+{
+    if (driver::driverDeinitialized) return CUDA_ERROR_DEINITIALIZED;
+    if (!driver::driverInitialized) return CUDA_ERROR_NOT_INITIALIZED;
+    if (dstDevice == 0) return CUDA_ERROR_INVALID_VALUE;
+
+    // get current context;
+    if (driver::contextStack.empty()) return CUDA_ERROR_INVALID_CONTEXT;
+    auto context = driver::contextStack.top();
+    if (context == nullptr || !(context->valid())) return CUDA_ERROR_INVALID_CONTEXT;
+
+    // check device memory allocation
+    if (!context->getAllocatedSize(dstDevice)) return CUDA_ERROR_INVALID_VALUE;
+    std::memset(reinterpret_cast<void*>(static_cast<uintptr_t>(dstDevice)), ui, N * sizeof(unsigned int)); // memset device memory
+    return CUDA_SUCCESS;
+}
+
 CUresult CUDAAPI cuLaunchKernel_cpp(CUfunction f,
     unsigned int gridDimX,
     unsigned int gridDimY,
@@ -333,6 +369,77 @@ CUresult CUDAAPI cuLaunchKernel_cpp(CUfunction f,
 }
 
 // CUDA Runtime API
+
+
+
+__attribute__((constructor)) static void __cudaRuntimeInit()
+{
+    std::cout << "===== Init CUDA Runtime =====" << std::endl;
+    for (int i = 0; i < 1; i++) {
+        // cudaSetDevice will init device 0 in device tables and set current context to device 0
+        cudaSetDevice_cpp(i);
+    }
+}
+// Internal registration functions
+// TODO: Internel registration functions should be isolated from runtime context/module management.
+//       In current implementation, __cudaRegisterFatBinary_cpp will call cudaSetDevice_cpp to init device 0, and register fatbinary and functions in the primary context of device 0.
+void __cudaRegisterVar_cpp(void **fatCubinHandle, char *hostVar, char *deviceAddress,
+    const char *deviceName, int ext, size_t size, int constant,
+    int global) {
+        return;
+    }
+
+void **__cudaRegisterFatBinary_cpp(void *fatCubin)
+{   
+    // init cuda runtime
+    // __cudaRuntimeInit();
+    std::cout << "test" << std::endl;
+    auto context = driver::contextStack.top();
+    if (context == nullptr || !(context->valid())) return nullptr;
+    if (context->registerFatbinary(fatCubin)) {
+        fatDeviceText * fatCubinHandle = static_cast<fatDeviceText *>(calloc(1, 24));
+        fatCubinHandle->magic = FATTEXT_MAGIC;
+        fatCubinHandle->version = 0x1;
+        fatCubinHandle->fatbin = fatCubin;
+        fatCubinHandle->data = 0;
+        return reinterpret_cast<void **>(fatCubinHandle);  // Cast to void** as expected by the CUDA runtime API.
+    }
+    else return nullptr;
+}
+
+void __cudaRegisterFunction_cpp(void **fatCubinHandle, const char *hostFun,
+    char *deviceFun, const char *deviceName,
+    int thread_limit, uint3 *tid, uint3 *bid,
+    dim3 *bDim, dim3 *gDim, int *wSize)
+{
+    std::cout << "test" << std::endl;
+    auto context = driver::contextStack.top();
+    fatDeviceText * fatCubin = reinterpret_cast<fatDeviceText *>(fatCubinHandle);
+    if (fatCubin->magic != FATTEXT_MAGIC) {
+        return;
+    }
+    context->registerFunction(fatCubin->fatbin, hostFun, deviceFun, deviceName);
+}    
+
+void __cudaUnregisterFatBinary_cpp(void **fatCubinHandle)
+{
+    // It's ok to do nothing here as all context and resources will be released when the context is destroyed. 
+}
+
+// Kernel launch configuration
+// TODO: Implement the actual configuration logic
+unsigned __cudaPushCallConfiguration_cpp(dim3 gridDim,
+    dim3 blockDim,
+    size_t sharedMem,
+    struct CUstream_st *stream) 
+{
+    return 0;
+}
+
+unsigned __cudaPopCallConfiguration_cpp(void* param1, void* param2, void* param3, void* param4) {
+    return 0;
+}
+
 cudaError_t CUDARTAPI cudaDeviceCanAccessPeer_cpp(int *canAccessPeer, int device, int peerDevice) 
 {
     // placeholder implementation
@@ -359,14 +466,105 @@ cudaError_t CUDARTAPI cudaSetDevice_cpp(int device)
         return cudaErrorInvalidDevice;
     }
     // create context
-    CUcontext ctx;
-    r = cuCtxCreate_cpp(&ctx, 0, cuDevice);
+    CUcontext pctx;
+    // r = cuCtxCreate_cpp(&ctx, 0, cuDevice);
+    // if (r != CUDA_SUCCESS) {
+    //     return cudaErrorUnknown;
+    // }
+    // set device primary context
+    // cuDevicePrimaryCtxRetain will push the context onto the context stack
+    r = cuDevicePrimaryCtxRetain_cpp(&pctx, cuDevice);
     if (r != CUDA_SUCCESS) {
         return cudaErrorUnknown;
     }
-    // set device primary context
-    driver::devices[device]->context = static_cast<driver::CUDAContext*>(ctx->outerContext);
     return cudaSuccess;  // return success for the placeholder implementation
+}
+
+cudaError_t CUDARTAPI cudaLaunchKernel_cpp(const void *func, dim3 gridDim, dim3 blockDim, void **args, size_t sharedMem, cudaStream_t stream)
+{
+    auto context = driver::contextStack.top();
+    if (context == nullptr || !(context->valid())) return cudaErrorLaunchFailure;
+    auto kernel = context->getKernel(func);
+    if (kernel == nullptr) return cudaErrorInvalidDeviceFunction;
+    // Launch the kernel
+    CUresult r = cuLaunchKernel_cpp(kernel, gridDim.x, gridDim.y, gridDim.z, blockDim.x, blockDim.y, blockDim.z, sharedMem, stream, args, nullptr);
+    if (r != CUDA_SUCCESS) return cudaErrorLaunchOutOfResources;
+    return cudaSuccess;
+}
+
+cudaError_t CUDARTAPI cudaMalloc_cpp(void **devPtr, size_t size)
+{
+    std::cout << "test" << std::endl;
+    CUdeviceptr dptr;
+    auto r = cuMemAlloc_cpp(&dptr, size);
+    *devPtr = reinterpret_cast<void*>(dptr);
+    return __driverErrorToRuntime(r);
+}
+
+cudaError_t CUDARTAPI cudaMemcpy_cpp(void *dst, const void *src, size_t count, enum cudaMemcpyKind kind)
+{
+    switch (kind) {
+        case cudaMemcpyHostToDevice:
+            return cudaMemcpyHtoD_cpp(dst, src, count);
+        case cudaMemcpyDeviceToHost:
+            return cudaMemcpyDtoH_cpp(dst, src, count);
+        default:
+            return cudaErrorInvalidValue;
+    }
+    return cudaErrorUnknown;
+}
+
+cudaError_t CUDARTAPI cudaMemcpyHtoD_cpp(void *dst, const void *src, size_t count)
+{
+    CUdeviceptr dptr = reinterpret_cast<CUdeviceptr>(dst);
+    auto r = cuMemcpyHtoD_cpp(dptr, src, count);
+    return __driverErrorToRuntime(r);
+}
+
+cudaError_t CUDARTAPI cudaMemcpyDtoD_cpp(void *dst, const void *src, size_t count)
+{
+    return cudaErrorUnknown;
+}
+
+cudaError_t CUDARTAPI cudaMemcpyDtoH_cpp(void *dst, const void *src, size_t count)
+{
+    CUdeviceptr dptr = reinterpret_cast<CUdeviceptr>(src);
+    auto r = cuMemcpyDtoH_cpp(dst, dptr, count);
+    return __driverErrorToRuntime(r);
+}
+
+cudaError_t CUDARTAPI cudaMemcpyToSymbol_cpp(const void *symbol, const void *src, size_t count, size_t offset, enum cudaMemcpyKind kind)
+{
+    return cudaErrorUnknown;
+}
+
+cudaError_t CUDARTAPI cudaMemcpyToSymbolShm_cpp(const void *symbol, const void *src, size_t count, size_t offset, enum cudaMemcpyKind kind)
+{
+    return cudaErrorUnknown;
+}
+
+cudaError_t CUDARTAPI cudaMemcpyShm_cpp(void *dst, const void *src, size_t count, enum cudaMemcpyKind kind)
+{
+    return cudaErrorUnknown;
+}
+
+cudaError_t CUDARTAPI cudaMemcpyIB_cpp(void *dst, const void *src, size_t count, enum cudaMemcpyKind kind)
+{
+    return cudaErrorUnknown;
+}
+
+cudaError_t CUDARTAPI cudaMemset_cpp(void *devPtr, int value, size_t count)
+{
+    CUdeviceptr dptr = reinterpret_cast<CUdeviceptr>(devPtr);
+    CUresult r = cuMemsetD32_cpp(dptr, static_cast<unsigned int>(value), count / sizeof(unsigned int) + 1);
+    return __driverErrorToRuntime(r);
+}
+
+cudaError_t CUDARTAPI cudaFree_cpp(void *devPtr)
+{
+    CUdeviceptr dptr = reinterpret_cast<CUdeviceptr>(devPtr);
+    CUresult r = cuMemFree_cpp(dptr);
+    return __driverErrorToRuntime(r);
 }
 
 // Virtual implementation
@@ -625,22 +823,12 @@ cudaError_t CUDARTAPI cudaLaunchCooperativeKernel_cpp(const void *func, dim3 gri
     return cudaErrorUnknown;
 }
 
-cudaError_t CUDARTAPI cudaLaunchKernel_cpp(const void *func, dim3 gridDim, dim3 blockDim, void **args, size_t sharedMem, cudaStream_t stream)
-{
-    return cudaErrorUnknown;
-}
-
 cudaError_t CUDARTAPI cudaArrayGetInfo_cpp(struct cudaChannelFormatDesc *desc, struct cudaExtent *extent, unsigned int *flags, cudaArray_t array)
 {
     return cudaErrorUnknown;
 }
 
 cudaError_t CUDARTAPI cudaArrayGetSparseProperties_cpp(struct cudaArraySparseProperties *sparseProperties, cudaArray_t array)
-{
-    return cudaErrorUnknown;
-}
-
-cudaError_t CUDARTAPI cudaFree_cpp(void *devPtr)
 {
     return cudaErrorUnknown;
 }
@@ -680,11 +868,6 @@ cudaError_t CUDARTAPI cudaHostGetFlags_cpp(unsigned int *pFlags, void *pHost)
     return cudaErrorUnknown;
 }
 
-cudaError_t CUDARTAPI cudaMalloc_cpp(void **devPtr, size_t size)
-{
-    return cudaErrorUnknown;
-}
-
 cudaError_t CUDARTAPI cudaMalloc3D_cpp(struct cudaPitchedPtr *pitchedDevPtr, struct cudaExtent extent)
 {
     return cudaErrorUnknown;
@@ -716,51 +899,6 @@ cudaError_t CUDARTAPI cudaMemGetInfo_cpp(size_t *free, size_t *total)
 }
 
 cudaError_t CUDARTAPI cudaMemPrefetchAsync_cpp(const void *devPtr, size_t count, int dstDevice, cudaStream_t stream)
-{
-    return cudaErrorUnknown;
-}
-
-cudaError_t CUDARTAPI cudaMemcpy_cpp(void *dst, const void *src, size_t count, enum cudaMemcpyKind kind)
-{
-    return cudaErrorUnknown;
-}
-
-cudaError_t CUDARTAPI cudaMemcpyHtoD_cpp(void *dst, const void *src, size_t count)
-{
-    return cudaErrorUnknown;
-}
-
-cudaError_t CUDARTAPI cudaMemcpyDtoD_cpp(void *dst, const void *src, size_t count)
-{
-    return cudaErrorUnknown;
-}
-
-cudaError_t CUDARTAPI cudaMemcpyDtoH_cpp(void *dst, const void *src, size_t count)
-{
-    return cudaErrorUnknown;
-}
-
-cudaError_t CUDARTAPI cudaMemcpyToSymbol_cpp(const void *symbol, const void *src, size_t count, size_t offset, enum cudaMemcpyKind kind)
-{
-    return cudaErrorUnknown;
-}
-
-cudaError_t CUDARTAPI cudaMemcpyToSymbolShm_cpp(const void *symbol, const void *src, size_t count, size_t offset, enum cudaMemcpyKind kind)
-{
-    return cudaErrorUnknown;
-}
-
-cudaError_t CUDARTAPI cudaMemcpyShm_cpp(void *dst, const void *src, size_t count, enum cudaMemcpyKind kind)
-{
-    return cudaErrorUnknown;
-}
-
-cudaError_t CUDARTAPI cudaMemcpyIB_cpp(void *dst, const void *src, size_t count, enum cudaMemcpyKind kind)
-{
-    return cudaErrorUnknown;
-}
-
-cudaError_t CUDARTAPI cudaMemset_cpp(void *devPtr, int value, size_t count)
 {
     return cudaErrorUnknown;
 }

@@ -10,23 +10,40 @@
 #include <EmulatedCUDADevice.h>
 #include <CUDAModule.h>
 #include <CUDAFunction.h>
+#include <log.h>
+
+// CUDA Types
+struct fatDeviceText {
+    uint32_t magic;
+    uint32_t version;
+    void*    fatbin;
+    uint64_t data; 
+};
+
+const uint32_t FATTEXT_MAGIC = 0x466243b1; 
 
 // CUDA Driver API
-CUresult CUDAAPI cuDeviceGetCount_cpp(int *count);
+// driver management
 CUresult CUDAAPI cuInit_cpp(unsigned int Flags);
+CUresult CUDAAPI cuDeviceGetCount_cpp(int *count);
 CUresult CUDAAPI cuDriverGetVersion_cpp(int *driverVersion);
+
+// device management
 CUresult CUDAAPI cuDeviceGet_cpp(CUdevice *device, int ordinal);
 CUresult CUDAAPI cuDeviceGetName_cpp(char *name, int len, CUdevice dev);
 CUresult CUDAAPI cuDeviceTotalMem_cpp(size_t *bytes, CUdevice dev);
 CUresult CUDAAPI cuDeviceGetUuid_cpp(CUuuid *uuid, CUdevice dev);
 CUresult CUDAAPI cuDeviceGetAttribute_cpp(int *pi, CUdevice_attribute attrib, CUdevice dev);
 CUresult CUDAAPI cuDevicePrimaryCtxRetain_cpp(CUcontext *pctx, CUdevice dev);
+
+// context management
 CUresult CUDAAPI cuCtxCreate_cpp(CUcontext *pctx, unsigned int flags, CUdevice dev);
 CUresult CUDAAPI cuCtxSetCurrent_cpp(CUcontext ctx);
 CUresult CUDAAPI cuCtxGetCurrent_cpp(CUcontext *pctx);
 CUresult CUDAAPI cuCtxGetDevice_cpp(CUdevice *device);
 CUresult CUDAAPI cuCtxDestroy_cpp(CUcontext ctx);
 
+// module management
 CUresult CUDAAPI cuModuleLoad_cpp(CUmodule *module, const char *fname);
 CUresult CUDAAPI cuModuleLoadData_cpp(CUmodule *module, const void *image);
 CUresult CUDAAPI cuModuleUnload_cpp(CUmodule hmod);
@@ -37,10 +54,31 @@ CUresult cuMemAlloc_cpp(CUdeviceptr* dptr, size_t bytesize);
 CUresult cuMemFree_cpp(CUdeviceptr dptr);
 CUresult cuMemcpyHtoD_cpp(CUdeviceptr dstDevice, const void *srcHost, size_t ByteCount);
 CUresult cuMemcpyDtoH_cpp(void *dstHost, CUdeviceptr srcDevice, size_t ByteCount);
+CUresult cuMemsetD32_cpp (CUdeviceptr dstDevice, unsigned int ui, size_t N);
 
 // kernel launch
 CUresult CUDAAPI cuLaunchKernel_cpp(CUfunction f, unsigned int gridDimX, unsigned int gridDimY, unsigned int gridDimZ, unsigned int blockDimX, unsigned int blockDimY, unsigned int blockDimZ, unsigned int sharedMemBytes, CUstream hStream, void **kernelParams, void **extra);
+
 // CUDA Runtime API
+// internel initialization
+void __cudaRegisterVar_cpp(void **fatCubinHandle, char *hostVar, char *deviceAddress,
+    const char *deviceName, int ext, size_t size, int constant,
+    int global);
+void **__cudaRegisterFatBinary_cpp(void *fatCubin);  
+void __cudaRegisterFunction_cpp(void **fatCubinHandle, const char *hostFun,
+        char *deviceFun, const char *deviceName,
+        int thread_limit, uint3 *tid, uint3 *bid,
+        dim3 *bDim, dim3 *gDim, int *wSize);
+void __cudaUnregisterFatBinary_cpp(void **fatCubinHandle);
+// internel kernel launch configuration
+unsigned __cudaPushCallConfiguration_cpp(dim3 gridDim,
+    dim3 blockDim,
+    size_t sharedMem = 0,
+    struct CUstream_st *stream = 0);
+
+unsigned __cudaPopCallConfiguration_cpp(void* param1, void* param2, void* param3, void* param4);
+  
+
 cudaError_t CUDARTAPI cudaDeviceCanAccessPeer_cpp(int *canAccessPeer, int device, int peerDevice);
 cudaError_t CUDARTAPI cudaSetDevice_cpp(int device);
 

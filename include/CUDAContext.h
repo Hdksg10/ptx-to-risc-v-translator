@@ -3,6 +3,7 @@
 #ifndef CUDA_CONTEXT_H
 #define CUDA_CONTEXT_H
 
+#include "CUDAFunction.h"
 #include <cuda.h>
 #include <stack>
 #include <unordered_map>
@@ -40,9 +41,18 @@ namespace driver {
         bool free(CUdeviceptr dptr); // Free device memory
         size_t getAllocatedSize(CUdeviceptr ptr) const; // Get the size of an allocated device memory block
         bool valid() const; // Check if the context is valid
+        bool registerFatbinary(void* fatbinary);
+        bool registerFunction(void* fatbinary, const void * hostFunc, char* deviceFunc, const char* name);
+        // get registered kernels
+        CUfunction getKernel(const void * hostFunc);
     private:
         CUctx_st context;
-        std::unordered_map<CUdeviceptr, size_t> allocations; // Map to track device memory allocations and their sizes
+        // Allocated device memory pointers and their sizes
+        std::unordered_map<CUdeviceptr, size_t> allocations;
+        // Registered kernels
+        std::unordered_map<const void*, CUfunction> kernels;
+        // Registered fatbinary modules
+        std::unordered_map<void*, CUmodule> fatbins; 
     };
 
     extern std::stack<CUDAContext*> contextStack; // Stack to manage contexts

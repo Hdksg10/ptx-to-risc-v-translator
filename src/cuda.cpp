@@ -93,6 +93,10 @@ extern "C" CUresult CUDAAPI cuMemcpyDtoH(void *dstHost, CUdeviceptr srcDevice, s
     return cuMemcpyDtoH_cpp(dstHost, srcDevice, ByteCount);
 }
 
+extern "C" CUresult cuMemsetD32(CUdeviceptr dstDevice, unsigned int ui, size_t N) {
+    return cuMemsetD32_cpp(dstDevice, ui, N);
+}
+
 extern "C" CUresult CUDAAPI cuLaunchKernel(CUfunction f, unsigned int gridDimX, unsigned int gridDimY, unsigned int gridDimZ, unsigned int blockDimX, unsigned int blockDimY, unsigned int blockDimZ, unsigned int sharedMemBytes, CUstream hStream, void **kernelParams, void **extra) {
     return cuLaunchKernel_cpp(f, gridDimX, gridDimY, gridDimZ, blockDimX, blockDimY, blockDimZ, sharedMemBytes, hStream, kernelParams, extra);
 }

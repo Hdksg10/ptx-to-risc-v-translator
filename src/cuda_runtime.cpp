@@ -2,6 +2,25 @@
 
 #include <Interface.h>
 
+// internel functions
+// internel initialization
+extern "C" void __cudaRegisterVar(void **fatCubinHandle, char *hostVar, char *deviceAddress,
+    const char *deviceName, int ext, size_t size, int constant,
+    int global);
+extern "C" void **__cudaRegisterFatBinary(void *fatCubin);  
+extern "C" void __cudaRegisterFunction(void **fatCubinHandle, const char *hostFun,
+        char *deviceFun, const char *deviceName,
+        int thread_limit, uint3 *tid, uint3 *bid,
+        dim3 *bDim, dim3 *gDim, int *wSize);
+extern "C" void __cudaUnregisterFatBinary(void **fatCubinHandle);
+// internel kernel launch configuration
+extern "C" unsigned __cudaPushCallConfiguration(dim3 gridDim,
+    dim3 blockDim,
+    size_t sharedMem = 0,
+    struct CUstream_st *stream = 0);
+
+extern "C" unsigned __cudaPopCallConfiguration(void* param1, void* param2, void* param3, void* param4);
+
 extern "C" cudaError_t CUDARTAPI cudaDeviceCanAccessPeer(int *canAccessPeer, int device, int peerDevice)
 {
     return cudaDeviceCanAccessPeer_cpp(canAccessPeer, device, peerDevice);

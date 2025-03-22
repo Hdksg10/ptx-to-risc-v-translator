@@ -1,5 +1,6 @@
+#include <Interface.h>
 #include <CUDAContext.h>
-
+#include <log.h>
 using namespace driver;
 
 std::stack<CUDAContext*> driver::contextStack; // Initialize the stack to manage contexts
@@ -42,10 +43,45 @@ CUcontext CUDAContext::getContext() {
 
 void CUDAContext::setCtx(CUcontext ctx) {
     context = *static_cast<CUctx_st*>(ctx);
+
+}
+bool CUDAContext::registerFatbinary(void* fatbinary) {
+    CUmodule module;
+    if (cuModuleLoadData_cpp(&module, fatbinary) == CUDA_SUCCESS) {
+        fatbins[fatbinary] = module;
+        return true;
+    }
+    return false;
+}
+
+bool CUDAContext::registerFunction(void* fatbinary, const void * hostFunc, char* deviceFunc, const char* name) {
+    auto it = fatbins.find(fatbinary);
+    if (it != fatbins.end()) {
+        // Fatbinary already loaded, get the module
+        CUmodule module = it->second;
+        CUfunction* f = nullptr;
+        cuModuleGetFunction_cpp(f, module, name);
+        kernels[hostFunc] = *f;
+        return true; 
+    }
+    else {
+        return false;
+    }
+}
+
+CUfunction CUDAContext::getKernel(const void * hostFunc){
+    auto it = kernels.find(hostFunc);
+    if (it == kernels.end()) {
+        return nullptr;
+    }
+    else {
+        return it->second;
+    }
 }
 
 bool CUDAContext::allocate(CUdeviceptr* dptr, size_t size) {
-    CUdeviceptr ptr = static_cast<unsigned long long>(reinterpret_cast<uintptr_t>(malloc(size)));
+    void * ptr_h = malloc(size);
+    CUdeviceptr ptr = static_cast<unsigned long long>(reinterpret_cast<uintptr_t>(ptr_h));
     if (ptr) {
         allocations[ptr] = size;
         *dptr = ptr;

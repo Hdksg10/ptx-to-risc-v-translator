@@ -69,7 +69,7 @@ bool test(std::stringstream& status) {
     CUmodule module;
     CUDA_CHECK(cuModuleLoad(&module, "test_add.ptx"), "Failed to load module: ");
 
-    std::string kernelName = "_Z10test_addccPm";
+    std::string kernelName = "_Z14EwiseAddKernelPKfS0_Pfm";
 
     CUfunction kernel;
     CUDA_CHECK(cuModuleGetFunction(&kernel, module, kernelName.c_str()), "Failed to get function: ");

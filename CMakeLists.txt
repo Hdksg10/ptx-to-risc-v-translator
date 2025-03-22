@@ -72,8 +72,15 @@ endif()
 # Build test
 if (BUILD_TEST)
     file(GLOB_RECURSE TEST_SOURCES "test/*.cpp")
-    add_executable(test ${TEST_SOURCES})
-    target_include_directories(test PUBLIC include include/cuda/include)
+    foreach(SOURCE_FILE ${TEST_SOURCES})
+        string(REGEX REPLACE ".*/([^/]+)\\.[^.]+$" "\\1" TEST_NAME ${SOURCE_FILE})
+        message(STATUS "Adding test source: ${TEST_NAME}")
+        add_executable(${TEST_NAME} ${SOURCE_FILE})
+        target_include_directories(${TEST_NAME} PUBLIC include include/cuda/include)
+        target_link_libraries(${TEST_NAME} PRIVATE cuda_riscv)
+    endforeach()
+    
+
     # target_link_libraries(test ${OCELOT_LIB})
     # target_link_libraries(test PRIVATE
     #         gpuocelot_analysis
@@ -87,6 +94,6 @@ if (BUILD_TEST)
     #         gpuocelot_translator
     #         gpuocelot_util
     #     )
-    target_link_libraries(test PRIVATE cuda_riscv)
+    
 
 endif()
