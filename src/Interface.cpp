@@ -883,7 +883,7 @@ cudaError_t CUDARTAPI cudaGetDevice_cpp(int *device)
 
 cudaError_t CUDARTAPI cudaGetDeviceCount_cpp(int *count)
 {
-    return cudaErrorUnknown;
+    return __driverErrorToRuntime(cuDeviceGetCount_cpp(count));
 }
 
 cudaError_t CUDARTAPI cudaGetDeviceFlags_cpp(unsigned int *flags)
