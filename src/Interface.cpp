@@ -460,6 +460,23 @@ CUresult CUDAAPI cuLaunchKernel_cpp(CUfunction f,
     return CUDA_SUCCESS;
 }
 
+CUresult cuFuncGetAttribute_cpp( int* pi, CUfunction_attribute attrib, CUfunction hfunc )
+{
+    return CUDA_ERROR_UNKNOWN;
+}
+CUresult cuFuncSetAttribute_cpp( CUfunction hfunc, CUfunction_attribute attrib, int  value )
+{
+    return CUDA_ERROR_UNKNOWN;
+}
+CUresult cuFuncSetCacheConfig_cpp( CUfunction hfunc, CUfunc_cache config ) 
+{
+    return CUDA_ERROR_UNKNOWN;
+}
+CUresult cuFuncSetSharedMemConfig_cpp( CUfunction hfunc, CUsharedconfig config )
+{
+    return CUDA_ERROR_UNKNOWN;
+}
+
 // CUDA Runtime API
 
 

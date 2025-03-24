@@ -62,11 +62,17 @@ CUresult CUDAAPI cuMemsetD32_cpp (CUdeviceptr dstDevice, unsigned int ui, size_t
 CUresult CUDAAPI cuMemGetInfo_cpp(size_t *free, size_t *total);
 CUresult CUDAAPI cuMemGetAllocationGranularity_cpp(size_t* granularity, const CUmemAllocationProp* prop, CUmemAllocationGranularity_flags option);
 
+
 // helper functions
 int cuGetErrorString_cpp(CUresult error, const char **pStr);
 
 // kernel launch
 CUresult CUDAAPI cuLaunchKernel_cpp(CUfunction f, unsigned int gridDimX, unsigned int gridDimY, unsigned int gridDimZ, unsigned int blockDimX, unsigned int blockDimY, unsigned int blockDimZ, unsigned int sharedMemBytes, CUstream hStream, void **kernelParams, void **extra);
+
+CUresult cuFuncGetAttribute_cpp( int* pi, CUfunction_attribute attrib, CUfunction hfunc );
+CUresult cuFuncSetAttribute_cpp( CUfunction hfunc, CUfunction_attribute attrib, int  value );
+CUresult cuFuncSetCacheConfig_cpp( CUfunction hfunc, CUfunc_cache config );
+CUresult cuFuncSetSharedMemConfig_cpp( CUfunction hfunc, CUsharedconfig config );
 
 // CUDA Runtime API
 // internel initialization

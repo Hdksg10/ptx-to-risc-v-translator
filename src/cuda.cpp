@@ -122,3 +122,20 @@ extern "C" CUresult CUDAAPI cuMemGetAllocationGranularity(size_t* granularity, c
 extern "C" CUresult CUDAAPI cuLaunchKernel(CUfunction f, unsigned int gridDimX, unsigned int gridDimY, unsigned int gridDimZ, unsigned int blockDimX, unsigned int blockDimY, unsigned int blockDimZ, unsigned int sharedMemBytes, CUstream hStream, void **kernelParams, void **extra) {
     return cuLaunchKernel_cpp(f, gridDimX, gridDimY, gridDimZ, blockDimX, blockDimY, blockDimZ, sharedMemBytes, hStream, kernelParams, extra);
 }
+
+extern "C" CUresult cuFuncGetAttribute( int* pi, CUfunction_attribute attrib, CUfunction hfunc )
+{
+    return cuFuncGetAttribute_cpp(pi, attrib, hfunc);
+}
+extern "C" CUresult cuFuncSetAttribute( CUfunction hfunc, CUfunction_attribute attrib, int  value )
+{
+    return cuFuncSetAttribute_cpp(hfunc, attrib, value);
+}
+extern "C" CUresult cuFuncSetCacheConfig( CUfunction hfunc, CUfunc_cache config )
+{
+    return cuFuncSetCacheConfig_cpp(hfunc, config);
+}
+extern "C" CUresult cuFuncSetSharedMemConfig( CUfunction hfunc, CUsharedconfig config )
+{
+    return cuFuncSetSharedMemConfig_cpp(hfunc, config);
+}
