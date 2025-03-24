@@ -41,6 +41,10 @@ extern "C" CUresult CUDAAPI cuDevicePrimaryCtxRetain(CUcontext *pctx, CUdevice d
     return cuDevicePrimaryCtxRetain_cpp(pctx, dev);
 }
 
+extern "C" CUresult CUDAAPI cuDevicePrimaryCtxGetState( CUdevice dev, unsigned int* flags, int* active ) {
+    return cuDevicePrimaryCtxGetState_cpp(dev, flags, active);
+}
+
 extern "C" CUresult CUDAAPI cuDeviceGetP2PAttribute(int *value, CUdevice_P2PAttribute attrib, CUdevice srcDevice, CUdevice dstDevice) {
     return cuDeviceGetP2PAttribute_cpp(value, attrib, srcDevice, dstDevice);
 }

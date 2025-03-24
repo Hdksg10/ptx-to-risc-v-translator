@@ -35,7 +35,9 @@ CUresult CUDAAPI cuDeviceTotalMem_cpp(size_t *bytes, CUdevice dev);
 CUresult CUDAAPI cuDeviceGetUuid_cpp(CUuuid *uuid, CUdevice dev);
 CUresult CUDAAPI cuDeviceGetAttribute_cpp(int *pi, CUdevice_attribute attrib, CUdevice dev);
 CUresult CUDAAPI cuDevicePrimaryCtxRetain_cpp(CUcontext *pctx, CUdevice dev);
+CUresult CUDAAPI cuDevicePrimaryCtxGetState_cpp( CUdevice dev, unsigned int* flags, int* active );
 CUresult CUDAAPI cuDeviceGetP2PAttribute_cpp(int *value, CUdevice_P2PAttribute attrib, CUdevice srcDevice, CUdevice dstDevice);
+
 
 // context management
 CUresult CUDAAPI cuCtxCreate_cpp(CUcontext *pctx, unsigned int flags, CUdevice dev);

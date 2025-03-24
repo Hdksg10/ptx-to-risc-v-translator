@@ -135,6 +135,23 @@ CUresult CUDAAPI cuDevicePrimaryCtxRetain_cpp(CUcontext *pctx, CUdevice dev) {
     return CUDA_SUCCESS;
 }
 
+CUresult CUDAAPI cuDevicePrimaryCtxGetState_cpp(CUdevice dev, unsigned int* flags, int* active ){
+    if (driver::driverDeinitialized) return CUDA_ERROR_DEINITIALIZED;
+    if (!driver::driverInitialized) return CUDA_ERROR_NOT_INITIALIZED;
+    if (dev < 0 || dev >= driver::MAX_DEVICES) return CUDA_ERROR_INVALID_DEVICE; // Check for valid device handle
+    if (flags == nullptr || active == nullptr) return CUDA_ERROR_INVALID_VALUE; 
+    
+    if (driver::devices[dev]->context == nullptr) {
+        *flags = 0;
+        *active = 0;
+    }
+    else {
+        *active = 1;
+        *flags = driver::devices[dev]->context->getContext()->flags;
+    }
+    return CUDA_SUCCESS;
+}
+
 CUresult CUDAAPI cuDeviceGetP2PAttribute_cpp(int *value, CUdevice_P2PAttribute attrib, CUdevice srcDevice, CUdevice dstDevice) {
     if (!value) return CUDA_ERROR_INVALID_VALUE;
     if (srcDevice == dstDevice || srcDevice >= driver::MAX_DEVICES || dstDevice >= driver::MAX_DEVICES) {
