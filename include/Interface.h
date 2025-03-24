@@ -190,4 +190,8 @@ cudaError_t CUDARTAPI cudaProfilerStop_cpp(void);
 cudaError_t CUDARTAPI cudaCtxResetPersistingL2Cache_cpp(void);
 cudaError_t CUDARTAPI cudaStreamCopyAttributes_cpp(cudaStream_t dst, cudaStream_t src);
 
+cudaError_t CUDARTAPI cudaGraphInstantiate_cpp ( cudaGraphExec_t* pGraphExec, cudaGraph_t graph, unsigned long long flags );
+
+cudaError_t CUDARTAPI cudaGraphGetNodes_cpp ( cudaGraph_t graph, cudaGraphNode_t* nodes, size_t* numNodes );
+
 #endif

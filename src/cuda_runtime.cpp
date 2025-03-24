@@ -508,3 +508,14 @@ extern "C" cudaError_t CUDARTAPI cudaStreamCopyAttributes(cudaStream_t dst, cuda
 {
     return cudaStreamCopyAttributes_cpp(dst, src);
 }
+
+extern "C" cudaError_t cudaGraphInstantiate ( cudaGraphExec_t* pGraphExec, cudaGraph_t graph, unsigned long long flags )
+{
+    return cudaGraphInstantiate_cpp(pGraphExec, graph, flags);
+}
+
+extern "C" cudaError_t cudaGraphGetNodes ( cudaGraph_t graph, cudaGraphNode_t* nodes, size_t* numNodes )
+{
+    return cudaGraphGetNodes_cpp(graph, nodes, numNodes);
+}
+

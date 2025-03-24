@@ -1145,3 +1145,13 @@ cudaError_t CUDARTAPI cudaStreamCopyAttributes_cpp(cudaStream_t dst, cudaStream_
 {
     return cudaErrorUnknown;
 }
+
+cudaError_t CUDARTAPI cudaGraphInstantiate_cpp ( cudaGraphExec_t* pGraphExec, cudaGraph_t graph, unsigned long long flags )
+{
+    return cudaErrorUnknown;
+}
+
+cudaError_t CUDARTAPI cudaGraphGetNodes_cpp ( cudaGraph_t graph, cudaGraphNode_t* nodes, size_t* numNodes )
+{
+    return cudaErrorUnknown;
+}
