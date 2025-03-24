@@ -233,6 +233,16 @@ CUresult CUDAAPI cuCtxSynchronize_cpp() {
 
     return CUDA_SUCCESS;
 }
+
+
+CUresult CUDAAPI cuCtxGetApiVersion_cpp ( CUcontext ctx, unsigned int* version ) {
+    if (driver::driverDeinitialized) return CUDA_ERROR_DEINITIALIZED;
+    if (!driver::driverInitialized) return CUDA_ERROR_NOT_INITIALIZED;
+    if (ctx == nullptr) return CUDA_ERROR_INVALID_CONTEXT; // Check for valid context handle
+    *version = driver::API_VERSION;
+    return CUDA_SUCCESS;
+}
+
 CUresult CUDAAPI cuModuleLoad_cpp(CUmodule *module, const char *fname) 
 {
     if (driver::driverDeinitialized) return CUDA_ERROR_DEINITIALIZED;
@@ -476,6 +486,34 @@ CUresult cuFuncSetSharedMemConfig_cpp( CUfunction hfunc, CUsharedconfig config )
 {
     return CUDA_ERROR_UNKNOWN;
 }
+
+// helper functions
+CUresult cuGetErrorName_cpp( CUresult error, const char** pStr )
+{
+    switch (error) {
+        case CUDA_SUCCESS:
+            *pStr = "CUDA_SUCCESS";
+            break;
+        case CUDA_ERROR_INVALID_VALUE:
+            *pStr = "CUDA_ERROR_INVALID_VALUE";
+            break;
+        case CUDA_ERROR_OUT_OF_MEMORY:
+            *pStr = "CUDA_ERROR_OUT_OF_MEMORY";
+            break;
+        default:
+           *pStr = "Unknown error";
+           // we wont return CUDA_ERROR_INVALID_VALUE here because we havn't implemented all the error codes
+    }
+    return CUDA_SUCCESS;
+}
+CUresult cuGetErrorString_cpp(CUresult error, const char **pStr)
+{
+    // switch (error) {
+    //     case CUDA_SUCCESS:
+    //         *pStr = "CUDA_SUCCESS";
+    //         break;
+    return CUDA_SUCCESS;
+}   
 
 // CUDA Runtime API
 

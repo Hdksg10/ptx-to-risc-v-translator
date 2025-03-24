@@ -72,6 +72,10 @@ extern "C" CUresult CUDAAPI cuCtxSynchronize() {
     return cuCtxSynchronize_cpp();
 }
 
+extern "C" CUresult CUDAAPI cuCtxGetApiVersion ( CUcontext ctx, unsigned int* version ) {
+    return cuCtxGetApiVersion_cpp(ctx, version); 
+}
+
 extern "C" CUresult CUDAAPI cuModuleLoad(CUmodule *module, const char *fname) {
     return cuModuleLoad_cpp(module, fname);
 }
@@ -138,4 +142,14 @@ extern "C" CUresult cuFuncSetCacheConfig( CUfunction hfunc, CUfunc_cache config 
 extern "C" CUresult cuFuncSetSharedMemConfig( CUfunction hfunc, CUsharedconfig config )
 {
     return cuFuncSetSharedMemConfig_cpp(hfunc, config);
+}
+
+extern "C" CUresult cuGetErrorName( CUresult error, const char** pStr )
+{
+    return cuGetErrorName_cpp(error, pStr);
+}
+
+extern "C" CUresult cuGetErrorString( CUresult error, const char** pStr )
+{
+    return cuGetErrorString_cpp(error, pStr);
 }

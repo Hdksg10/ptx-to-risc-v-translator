@@ -45,6 +45,7 @@ CUresult CUDAAPI cuCtxGetCurrent_cpp(CUcontext *pctx);
 CUresult CUDAAPI cuCtxGetDevice_cpp(CUdevice *device);
 CUresult CUDAAPI cuCtxDestroy_cpp(CUcontext ctx);
 CUresult CUDAAPI cuCtxSynchronize_cpp();
+CUresult CUDAAPI cuCtxGetApiVersion_cpp ( CUcontext ctx, unsigned int* version );
 
 // module management
 CUresult CUDAAPI cuModuleLoad_cpp(CUmodule *module, const char *fname);
@@ -64,7 +65,8 @@ CUresult CUDAAPI cuMemGetAllocationGranularity_cpp(size_t* granularity, const CU
 
 
 // helper functions
-int cuGetErrorString_cpp(CUresult error, const char **pStr);
+CUresult cuGetErrorName_cpp( CUresult error, const char** pStr );
+CUresult cuGetErrorString_cpp(CUresult error, const char **pStr);
 
 // kernel launch
 CUresult CUDAAPI cuLaunchKernel_cpp(CUfunction f, unsigned int gridDimX, unsigned int gridDimY, unsigned int gridDimZ, unsigned int blockDimX, unsigned int blockDimY, unsigned int blockDimZ, unsigned int sharedMemBytes, CUstream hStream, void **kernelParams, void **extra);

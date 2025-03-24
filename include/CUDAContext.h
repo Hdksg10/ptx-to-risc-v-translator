@@ -71,7 +71,7 @@ namespace driver {
         std::stack<launchConfiguration> launchConfigurations;
         
     };
-
+    constexpr unsigned int API_VERSION = 3020;
     extern std::stack<CUDAContext*> contextStack; // Stack to manage contexts
 } // namespace driver
 
