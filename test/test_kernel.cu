@@ -6,9 +6,9 @@
 #include <sstream>
 #include <vector>
 
-#define BASE_THREAD_NUM 256
+#define BASE_THREAD_NUM 8
 
-typedef float scalar_t;
+typedef int scalar_t;
 const size_t ELEM_SIZE = sizeof(scalar_t);
 
 struct CudaDims {
@@ -53,8 +53,8 @@ int main() {
     const size_t M = 128;
     scalar_t a[M], b[M], out[M];
     for (size_t i = 0; i < M; i++) {
-        a[i] = i;
-        b[i] = i;
+        a[i] = i + 1;
+        b[i] = i + 1;
     }
     memset(out, 0, M * ELEM_SIZE);
 
