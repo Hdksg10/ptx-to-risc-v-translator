@@ -18,6 +18,8 @@ static cudaError_t __driverErrorToRuntime(CUresult err) {
     }
 }
 
+
+
 CUresult CUDAAPI cuDeviceGetCount_cpp(int *count) {
     // Implementation to get the number of CUDA devices
     if (driver::driverDeinitialized) return CUDA_ERROR_DEINITIALIZED;
@@ -29,7 +31,7 @@ CUresult CUDAAPI cuDeviceGetCount_cpp(int *count) {
 }
 
 CUresult CUDAAPI cuInit_cpp(unsigned int Flags) {
-    std::cout << "===== RISC-V CUDA Library! =====" << std::endl;
+    std::cout << "===== Hello from RISC-V CUDA Driver Library! =====" << std::endl;
     // Implementation to initialize the CUDA driver
     // This is a placeholder implementation
     LOG(LOG_LEVEL_DEBUG, "DEBUG", "Initializing CUDA driver with flags: %u", Flags);
@@ -111,22 +113,47 @@ CUresult CUDAAPI cuDeviceGetAttribute_cpp(int *pi, CUdevice_attribute attrib, CU
 }
 
 CUresult CUDAAPI cuDevicePrimaryCtxRetain_cpp(CUcontext *pctx, CUdevice dev) {
+    LOG(LOG_LEVEL_DEBUG, "DEBUG", "Retaining primary context for device %d", dev);
     if (driver::driverDeinitialized) return CUDA_ERROR_DEINITIALIZED;
     if (!driver::driverInitialized) return CUDA_ERROR_NOT_INITIALIZED;
     if (dev < 0 || dev >= driver::MAX_DEVICES) return CUDA_ERROR_INVALID_DEVICE; // Check for valid device handle
     if (pctx == nullptr) return CUDA_ERROR_INVALID_VALUE; // Check for valid pointer
-
+    
     // Check if the primary context is already retained
     if (driver::devices[dev]->context != nullptr) {
+        LOG(LOG_LEVEL_DEBUG, "DEBUG", "Primary context %p already retained for device %d", driver::devices[dev]->context, dev);
         *pctx = driver::devices[dev]->context->getContext();
         return CUDA_SUCCESS;
     }
+    LOG(LOG_LEVEL_DEBUG, "DEBUG", "Creating new primary context for device %d", dev);
     // Create a new primary context for the device
     driver::devices[dev]->context = new driver::CUDAContext();
     driver::devices[dev]->context->create(dev, 0); // Assuming default flags for primary context
     *pctx = driver::devices[dev]->context->getContext();
-
+    LOG(LOG_LEVEL_DEBUG, "DEBUG", "Primary context %p created and retained for device %d", driver::devices[dev]->context, dev);
     driver::contextStack.push(driver::devices[dev]->context);
+    return CUDA_SUCCESS;
+}
+
+CUresult CUDAAPI cuDeviceGetP2PAttribute_cpp(int *value, CUdevice_P2PAttribute attrib, CUdevice srcDevice, CUdevice dstDevice) {
+    if (!value) return CUDA_ERROR_INVALID_VALUE;
+    if (srcDevice == dstDevice || srcDevice >= driver::MAX_DEVICES || dstDevice >= driver::MAX_DEVICES) {
+        return CUDA_ERROR_INVALID_DEVICE;
+    }
+    // Not implemented yet
+    switch (attrib) {
+        case CU_DEVICE_P2P_ATTRIBUTE_PERFORMANCE_RANK:
+           *value = 0;
+            break;
+        case CU_DEVICE_P2P_ATTRIBUTE_ACCESS_SUPPORTED:
+            *value = 0;
+            break;
+        case CU_DEVICE_P2P_ATTRIBUTE_NATIVE_ATOMIC_SUPPORTED:
+            *value = 0;
+            break;
+        default:
+            return CUDA_ERROR_INVALID_VALUE;
+    }
     return CUDA_SUCCESS;
 }
 
@@ -139,6 +166,17 @@ CUresult CUDAAPI cuCtxCreate_cpp(CUcontext *pctx, unsigned int flags, CUdevice d
     driver::devices[dev]->context->create(dev, flags);
     *pctx = driver::devices[dev]->context->getContext();
     return CUDA_SUCCESS;
+}
+
+CUresult CUDAAPI cuCtxCreate_v3_cpp(CUcontext* pctx, CUexecAffinityParam* paramsArray, int  numParams, unsigned int  flags, CUdevice dev) {
+    if (driver::driverDeinitialized) return CUDA_ERROR_DEINITIALIZED;
+    if (!driver::driverInitialized) return CUDA_ERROR_NOT_INITIALIZED;
+    if (dev < 0 || dev >= driver::MAX_DEVICES) return CUDA_ERROR_INVALID_DEVICE; // Check for valid device handle
+    if (pctx == nullptr) return CUDA_ERROR_INVALID_VALUE; // Check for valid pointer
+    if (numParams < 0) return CUDA_ERROR_INVALID_VALUE; // Check for valid number of parameters
+    // Not implemented yet
+    *pctx = nullptr;
+    return CUDA_ERROR_UNKNOWN;
 }
 
 // Note that we havn't implemented the context stack management yet, so cuCtxSetCurrent will not work as expected.
@@ -182,7 +220,19 @@ CUresult CUDAAPI cuCtxDestroy_cpp(CUcontext ctx) {
     ctx->valid = 0;
     return CUDA_SUCCESS;
 }
+CUresult CUDAAPI cuCtxSynchronize_cpp() {
+    if (driver::driverDeinitialized) return CUDA_ERROR_DEINITIALIZED;
+    if (!driver::driverInitialized) return CUDA_ERROR_NOT_INITIALIZED;
+    if (driver::contextStack.empty()) return CUDA_ERROR_INVALID_CONTEXT;
+    auto context = driver::contextStack.top();
+    if (!context->valid()) return CUDA_ERROR_INVALID_CONTEXT;
 
+    // We have synchronized current context in Ocelot translation-execution module
+
+    // Do nothing here
+
+    return CUDA_SUCCESS;
+}
 CUresult CUDAAPI cuModuleLoad_cpp(CUmodule *module, const char *fname) 
 {
     if (driver::driverDeinitialized) return CUDA_ERROR_DEINITIALIZED;
@@ -228,6 +278,7 @@ CUresult CUDAAPI cuModuleUnload_cpp(CUmodule hmod)
 
 CUresult CUDAAPI cuModuleGetFunction_cpp(CUfunction *hfunc, CUmodule hmod, const char *name) 
 {
+    LOG(LOG_LEVEL_DEBUG, "DEBUG", "Getting function from module %p with name: %s", hmod, name);
     if (driver::driverDeinitialized) return CUDA_ERROR_DEINITIALIZED;
     if (!driver::driverInitialized) return CUDA_ERROR_NOT_INITIALIZED;
     if (hmod == nullptr || hfunc == nullptr || name == nullptr) return CUDA_ERROR_INVALID_VALUE;
@@ -240,7 +291,25 @@ CUresult CUDAAPI cuModuleGetFunction_cpp(CUfunction *hfunc, CUmodule hmod, const
     }
 }
 
+CUresult CUDAAPI cuModuleGetGlobal_cpp(CUdeviceptr *dptr, size_t *bytes, CUmodule hmod, const char *name) {
+    LOG(LOG_LEVEL_DEBUG, "DEBUG", "Getting global variable from module %p with name: %s", hmod, name);
+    if (driver::driverDeinitialized) return CUDA_ERROR_DEINITIALIZED;
+    if (!driver::driverInitialized) return CUDA_ERROR_NOT_INITIALIZED;
+    if (hmod == nullptr || dptr == nullptr || bytes == nullptr || name == nullptr) return CUDA_ERROR_INVALID_VALUE;
+    try {
+        driver::CUDAModule *inner_module = static_cast<driver::CUDAModule*>(hmod->module);
+        auto [global, size]  = inner_module->getGlobal(name);
+        *dptr = global;
+        *bytes = size;
+        return CUDA_SUCCESS;
+    }
+    catch (const std::exception& e) {
+        return CUDA_ERROR_UNKNOWN;
+    }
+}
+
 CUresult CUDAAPI cuModuleLoadData_cpp(CUmodule *module, const void *image) {
+    LOG(LOG_LEVEL_DEBUG, "DEBUG", "Loading module data from image. image ptr: %p", image);
     if (driver::driverDeinitialized) return CUDA_ERROR_DEINITIALIZED;
     if (!driver::driverInitialized) return CUDA_ERROR_NOT_INITIALIZED;
     if (module == nullptr || image == nullptr) return CUDA_ERROR_INVALID_VALUE;
@@ -261,7 +330,7 @@ CUresult CUDAAPI cuModuleLoadData_cpp(CUmodule *module, const void *image) {
         *module = mod;
         return CUDA_SUCCESS;
     } catch (const std::exception& e) {
-        std::cout << e.what() << std::endl;
+        LOG(LOG_LEVEL_ERROR, "ERROR", "Failed to load module: %s", e.what());
         return CUDA_ERROR_UNKNOWN;
     }
 }
@@ -342,6 +411,29 @@ CUresult cuMemsetD32_cpp(CUdeviceptr dstDevice, unsigned int ui, size_t N)
     return CUDA_SUCCESS;
 }
 
+CUresult CUDAAPI cuMemGetInfo_cpp(size_t *free, size_t *total)
+{
+    if (driver::driverDeinitialized) return CUDA_ERROR_DEINITIALIZED;
+    if (!driver::driverInitialized) return CUDA_ERROR_NOT_INITIALIZED;
+    if (driver::contextStack.empty()) return CUDA_ERROR_INVALID_CONTEXT;
+    auto context = driver::contextStack.top();
+    if (context == nullptr || !(context->valid())) return CUDA_ERROR_INVALID_CONTEXT;
+    if (free == nullptr || total == nullptr) return CUDA_ERROR_INVALID_VALUE;
+    // Not implemented yet
+    return CUDA_ERROR_UNKNOWN;
+}
+CUresult CUDAAPI cuMemGetAllocationGranularity_cpp(size_t* granularity, const CUmemAllocationProp* prop, CUmemAllocationGranularity_flags option)
+{
+    if (driver::driverDeinitialized) return CUDA_ERROR_DEINITIALIZED;
+    if (!driver::driverInitialized) return CUDA_ERROR_NOT_INITIALIZED;
+    if (driver::contextStack.empty()) return CUDA_ERROR_INVALID_CONTEXT;
+    auto context = driver::contextStack.top();
+    if (context == nullptr || !(context->valid())) return CUDA_ERROR_INVALID_CONTEXT;
+    if (granularity == nullptr || prop == nullptr) return CUDA_ERROR_INVALID_VALUE;
+    // Not implemented yet
+    return CUDA_ERROR_UNKNOWN;
+}
+
 CUresult CUDAAPI cuLaunchKernel_cpp(CUfunction f,
     unsigned int gridDimX,
     unsigned int gridDimY,
@@ -374,7 +466,15 @@ CUresult CUDAAPI cuLaunchKernel_cpp(CUfunction f,
 
 __attribute__((constructor)) static void __cudaRuntimeInit()
 {
-    std::cout << "===== Init CUDA Runtime =====" << std::endl;
+    LOG(LOG_LEVEL_INFO, "INFO", "Init CUDA Runtime");
+    LOG(LOG_LEVEL_DEBUG, "DEBUG", "Init driver global variables");
+    CUresult r;
+    // init driver
+    r = cuInit_cpp(0);
+    if (r != CUDA_SUCCESS) {
+        LOG(LOG_LEVEL_ERROR, "ERROR", "Failed to initialize CUDA driver");
+        return ;
+    }
     for (int i = 0; i < 1; i++) {
         // cudaSetDevice will init device 0 in device tables and set current context to device 0
         cudaSetDevice_cpp(i);
@@ -393,18 +493,31 @@ void **__cudaRegisterFatBinary_cpp(void *fatCubin)
 {   
     // init cuda runtime
     // __cudaRuntimeInit();
-    std::cout << "test" << std::endl;
+    LOG(LOG_LEVEL_DEBUG, "DEBUG", "__cudaRegisterFatBinary_cpp(fatcubin: %p)", fatCubin);
+    fatDeviceText * fatCubinHandle = reinterpret_cast<fatDeviceText *>(fatCubin);
+    if (fatCubinHandle->magic != FATTEXT_MAGIC) {
+        LOG(LOG_LEVEL_ERROR, "ERROR", "Invalid fatCubin magic number: %x", fatCubinHandle->magic);
+        return nullptr;
+    }
     auto context = driver::contextStack.top();
-    if (context == nullptr || !(context->valid())) return nullptr;
-    if (context->registerFatbinary(fatCubin)) {
-        fatDeviceText * fatCubinHandle = static_cast<fatDeviceText *>(calloc(1, 24));
-        fatCubinHandle->magic = FATTEXT_MAGIC;
-        fatCubinHandle->version = 0x1;
-        fatCubinHandle->fatbin = fatCubin;
-        fatCubinHandle->data = 0;
+    if (context == nullptr || !(context->valid())) {
+        LOG(LOG_LEVEL_ERROR, "ERROR", "Invalid CUDA context");
+        return nullptr;
+    }
+    LOG(LOG_LEVEL_DEBUG, "DEBUG", "Registering fatbinary with context: %p, fatbin version: %d, fatbin address: %p", context, fatCubinHandle->version, fatCubinHandle->fatbin);
+    if (context->registerFatbinary(fatCubinHandle->fatbin)) {
+        LOG(LOG_LEVEL_DEBUG, "DEBUG", "Fatbinary registered successfully");
+        // fatDeviceText * fatCubinHandle = static_cast<fatDeviceText *>(calloc(1, 24));
+        // fatCubinHandle->magic = FATTEXT_MAGIC;
+        // fatCubinHandle->version = 0x1;
+        // fatCubinHandle->fatbin = fatCubin;
+        // fatCubinHandle->data = 0;
         return reinterpret_cast<void **>(fatCubinHandle);  // Cast to void** as expected by the CUDA runtime API.
     }
-    else return nullptr;
+    else {
+        LOG(LOG_LEVEL_ERROR, "ERROR", "Failed to register fatbinary");
+        return nullptr;  // Return nullptr if registration fails.
+    }
 }
 
 void __cudaRegisterFunction_cpp(void **fatCubinHandle, const char *hostFun,
@@ -412,18 +525,25 @@ void __cudaRegisterFunction_cpp(void **fatCubinHandle, const char *hostFun,
     int thread_limit, uint3 *tid, uint3 *bid,
     dim3 *bDim, dim3 *gDim, int *wSize)
 {
-    std::cout << "test" << std::endl;
+    LOG(LOG_LEVEL_DEBUG, "DEBUG", "Registering function %p with device function %s at address %p in fatbinary handler %p.", hostFun, deviceName, deviceFun, fatCubinHandle);
     auto context = driver::contextStack.top();
     fatDeviceText * fatCubin = reinterpret_cast<fatDeviceText *>(fatCubinHandle);
     if (fatCubin->magic != FATTEXT_MAGIC) {
         return;
     }
-    context->registerFunction(fatCubin->fatbin, hostFun, deviceFun, deviceName);
+    bool r = context->registerFunction(fatCubin->fatbin, hostFun, deviceFun, deviceName);
+    if (!r) {
+        LOG(LOG_LEVEL_ERROR, "ERROR", "Failed to register function %p with device function %s at address %p in fatbinary handler %p.", hostFun, deviceName, deviceFun, fatCubinHandle);
+    }
+    else {
+        LOG(LOG_LEVEL_DEBUG, "DEBUG", "Successfully registered function %p with device function %s at address %p in fatbinary handler %p.", hostFun, deviceName, deviceFun, fatCubinHandle);
+    }
 }    
 
 void __cudaUnregisterFatBinary_cpp(void **fatCubinHandle)
 {
     // It's ok to do nothing here as all context and resources will be released when the context is destroyed. 
+    LOG(LOG_LEVEL_DEBUG, "DEBUG", "Unregistering fat binary handler %p.", fatCubinHandle);
 }
 
 // Kernel launch configuration
@@ -432,11 +552,42 @@ unsigned __cudaPushCallConfiguration_cpp(dim3 gridDim,
     dim3 blockDim,
     size_t sharedMem,
     struct CUstream_st *stream) 
-{
+{ 
+    LOG(LOG_LEVEL_DEBUG, "DEBUG", "Pushing call configuration with gridDim (%d, %d, %d), blockDim (%d, %d, %d), sharedMem %zu, stream %p", gridDim.x, gridDim.y, gridDim.z, blockDim.x, blockDim.y, blockDim.z, sharedMem, stream);
+    LOG(LOG_LEVEL_DEBUG, "DEBUG", "Grid address: %p, Block address: %p", (void*)&gridDim, (void*)&blockDim);
+    auto context = driver::contextStack.top();
+    if (context == nullptr || !(context->valid())) 
+    {
+        LOG(LOG_LEVEL_ERROR, "ERROR", "__cudaPushCallConfiguration failed: context is null or invalid.");
+        return cudaErrorLaunchFailure;
+    }
+    context->pushLaunchConfig(gridDim, blockDim, sharedMem, stream);
     return 0;
 }
 
-unsigned __cudaPopCallConfiguration_cpp(void* param1, void* param2, void* param3, void* param4) {
+unsigned __cudaPopCallConfiguration_cpp(void* gridDim, void* blockDim, void* sharedMem, void* stream) {
+    LOG(LOG_LEVEL_DEBUG, "DEBUG", "Popping call configuration with params %p, %p, %p, %p", gridDim, blockDim, sharedMem, stream);
+    dim3* gridDimPtr = static_cast<dim3*>(gridDim);
+    dim3* blockDimPtr = static_cast<dim3*>(blockDim);
+    size_t* sharedMemPtr = static_cast<size_t*>(sharedMem);
+    CUstream_st** streamPtr = static_cast<CUstream_st**>(stream);
+    auto context = driver::contextStack.top();
+    if (context == nullptr || !(context->valid())) 
+    {
+        LOG(LOG_LEVEL_ERROR, "ERROR", "__cudaPopCallConfiguration failed: context is null or invalid.");
+        return cudaErrorLaunchFailure;
+    }
+    launchConfiguration config = context->popLaunchConfig();
+    LOG(LOG_LEVEL_DEBUG, "DEBUG", "GridDim set to (%d, %d, %d), BlockDim set to (%d, %d, %d)", config.blockDim.x, config.blockDim.y, config.blockDim.z, config.gridDim.x, config.gridDim.y, config.gridDim.z);
+
+    gridDimPtr->x = config.gridDim.x;
+    gridDimPtr->y = config.gridDim.y;
+    gridDimPtr->z = config.gridDim.z;
+    blockDimPtr->x = config.blockDim.x;
+    blockDimPtr->y = config.blockDim.y;
+    blockDimPtr->z = config.blockDim.z;
+    *sharedMemPtr = config.sharedMemBytes;
+    *streamPtr = config.hStream;
     return 0;
 }
 
@@ -453,12 +604,8 @@ cudaError_t CUDARTAPI cudaDeviceCanAccessPeer_cpp(int *canAccessPeer, int device
 
 cudaError_t CUDARTAPI cudaSetDevice_cpp(int device)
 {
+    LOG(LOG_LEVEL_DEBUG, "INFO", "Setting CUDA device %d", device);
     CUresult r;
-    // init driver
-    r = cuInit_cpp(0);
-    if (r != CUDA_SUCCESS) {
-        return cudaErrorInitializationError;
-    }
     // get device
     CUdevice cuDevice;
     r = cuDeviceGet_cpp(&cuDevice, device);
@@ -482,6 +629,8 @@ cudaError_t CUDARTAPI cudaSetDevice_cpp(int device)
 
 cudaError_t CUDARTAPI cudaLaunchKernel_cpp(const void *func, dim3 gridDim, dim3 blockDim, void **args, size_t sharedMem, cudaStream_t stream)
 {
+    LOG(LOG_LEVEL_DEBUG, "DEBUG", "Launching kernel: %p, gridDim: (%d, %d, %d), blockDim: (%d, %d, %d), args: %p, sharedMem: %zu, stream: %p", func, gridDim.x, gridDim.y, gridDim.z, blockDim.x, blockDim.y, blockDim.z, args, sharedMem, stream);
+    LOG(LOG_LEVEL_DEBUG, "DEBUG", "Grid address: %p, Block address: %p", (void*)&gridDim, (void*)&blockDim);
     auto context = driver::contextStack.top();
     if (context == nullptr || !(context->valid())) return cudaErrorLaunchFailure;
     auto kernel = context->getKernel(func);
@@ -494,15 +643,22 @@ cudaError_t CUDARTAPI cudaLaunchKernel_cpp(const void *func, dim3 gridDim, dim3 
 
 cudaError_t CUDARTAPI cudaMalloc_cpp(void **devPtr, size_t size)
 {
-    std::cout << "test" << std::endl;
+    LOG(LOG_LEVEL_DEBUG, "DEBUG", "Malloc called with size: %zu", size);
     CUdeviceptr dptr;
     auto r = cuMemAlloc_cpp(&dptr, size);
-    *devPtr = reinterpret_cast<void*>(dptr);
+    if (r == CUDA_SUCCESS) {
+        *devPtr = reinterpret_cast<void*>(dptr);
+        LOG(LOG_LEVEL_DEBUG, "DEBUG", "Malloc successful, allocated %zu bytes at address %p", size, *devPtr);
+    }
+    else {
+        LOG(LOG_LEVEL_ERROR, "ERROR", "Malloc failed with error code %d", r);
+    }
     return __driverErrorToRuntime(r);
 }
 
 cudaError_t CUDARTAPI cudaMemcpy_cpp(void *dst, const void *src, size_t count, enum cudaMemcpyKind kind)
 {
+    LOG(LOG_LEVEL_DEBUG, "DEBUG", "Copy %zu bytes from %p to %p with kind %d", count, src, dst, kind);
     switch (kind) {
         case cudaMemcpyHostToDevice:
             return cudaMemcpyHtoD_cpp(dst, src, count);
@@ -562,8 +718,13 @@ cudaError_t CUDARTAPI cudaMemset_cpp(void *devPtr, int value, size_t count)
 
 cudaError_t CUDARTAPI cudaFree_cpp(void *devPtr)
 {
+    LOG(LOG_LEVEL_DEBUG, "DEBUG", "Freeing memory at %p", devPtr);
+    if (!devPtr) {
+        return cudaErrorInvalidValue;
+    }
     CUdeviceptr dptr = reinterpret_cast<CUdeviceptr>(devPtr);
     CUresult r = cuMemFree_cpp(dptr);
+    LOG(LOG_LEVEL_DEBUG, "DEBUG", "Memory freed at %p", devPtr);
     return __driverErrorToRuntime(r);
 }
 

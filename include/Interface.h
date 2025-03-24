@@ -35,26 +35,35 @@ CUresult CUDAAPI cuDeviceTotalMem_cpp(size_t *bytes, CUdevice dev);
 CUresult CUDAAPI cuDeviceGetUuid_cpp(CUuuid *uuid, CUdevice dev);
 CUresult CUDAAPI cuDeviceGetAttribute_cpp(int *pi, CUdevice_attribute attrib, CUdevice dev);
 CUresult CUDAAPI cuDevicePrimaryCtxRetain_cpp(CUcontext *pctx, CUdevice dev);
+CUresult CUDAAPI cuDeviceGetP2PAttribute_cpp(int *value, CUdevice_P2PAttribute attrib, CUdevice srcDevice, CUdevice dstDevice);
 
 // context management
 CUresult CUDAAPI cuCtxCreate_cpp(CUcontext *pctx, unsigned int flags, CUdevice dev);
+CUresult CUDAAPI cuCtxCreate_v3_cpp(CUcontext* pctx, CUexecAffinityParam* paramsArray, int numParams, unsigned int flags, CUdevice dev); 
 CUresult CUDAAPI cuCtxSetCurrent_cpp(CUcontext ctx);
 CUresult CUDAAPI cuCtxGetCurrent_cpp(CUcontext *pctx);
 CUresult CUDAAPI cuCtxGetDevice_cpp(CUdevice *device);
 CUresult CUDAAPI cuCtxDestroy_cpp(CUcontext ctx);
+CUresult CUDAAPI cuCtxSynchronize_cpp();
 
 // module management
 CUresult CUDAAPI cuModuleLoad_cpp(CUmodule *module, const char *fname);
 CUresult CUDAAPI cuModuleLoadData_cpp(CUmodule *module, const void *image);
 CUresult CUDAAPI cuModuleUnload_cpp(CUmodule hmod);
 CUresult CUDAAPI cuModuleGetFunction_cpp(CUfunction *hfunc, CUmodule hmod, const char *name);
+CUresult CUDAAPI cuModuleGetGlobal_cpp(CUdeviceptr *dptr, size_t *bytes, CUmodule hmod, const char *name);
 
 // driver memory managment
-CUresult cuMemAlloc_cpp(CUdeviceptr* dptr, size_t bytesize);
-CUresult cuMemFree_cpp(CUdeviceptr dptr);
-CUresult cuMemcpyHtoD_cpp(CUdeviceptr dstDevice, const void *srcHost, size_t ByteCount);
-CUresult cuMemcpyDtoH_cpp(void *dstHost, CUdeviceptr srcDevice, size_t ByteCount);
-CUresult cuMemsetD32_cpp (CUdeviceptr dstDevice, unsigned int ui, size_t N);
+CUresult CUDAAPI cuMemAlloc_cpp(CUdeviceptr* dptr, size_t bytesize);
+CUresult CUDAAPI cuMemFree_cpp(CUdeviceptr dptr);
+CUresult CUDAAPI cuMemcpyHtoD_cpp(CUdeviceptr dstDevice, const void *srcHost, size_t ByteCount);
+CUresult CUDAAPI cuMemcpyDtoH_cpp(void *dstHost, CUdeviceptr srcDevice, size_t ByteCount);
+CUresult CUDAAPI cuMemsetD32_cpp (CUdeviceptr dstDevice, unsigned int ui, size_t N);
+CUresult CUDAAPI cuMemGetInfo_cpp(size_t *free, size_t *total);
+CUresult CUDAAPI cuMemGetAllocationGranularity_cpp(size_t* granularity, const CUmemAllocationProp* prop, CUmemAllocationGranularity_flags option);
+
+// helper functions
+int cuGetErrorString_cpp(CUresult error, const char **pStr);
 
 // kernel launch
 CUresult CUDAAPI cuLaunchKernel_cpp(CUfunction f, unsigned int gridDimX, unsigned int gridDimY, unsigned int gridDimZ, unsigned int blockDimX, unsigned int blockDimY, unsigned int blockDimZ, unsigned int sharedMemBytes, CUstream hStream, void **kernelParams, void **extra);

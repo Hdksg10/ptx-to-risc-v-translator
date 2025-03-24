@@ -38,7 +38,7 @@ namespace driver {
          *
          * The primary context is created when the device is initialized and destroyed when the device is shutdown.
          */
-        driver::CUDAContext* context; 
+        driver::CUDAContext* context = nullptr; 
     private:
         executive::MulticoreCPUDevice device;
     };

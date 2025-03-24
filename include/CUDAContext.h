@@ -3,8 +3,9 @@
 #ifndef CUDA_CONTEXT_H
 #define CUDA_CONTEXT_H
 
-#include "CUDAFunction.h"
+#include <CUDAFunction.h>
 #include <cuda.h>
+#include <cuda_runtime.h>
 #include <stack>
 #include <unordered_map>
 #include <cstdlib>
@@ -28,6 +29,13 @@ extern "C"{
     }; // struct CUctx_st
 }
 
+struct launchConfiguration {
+    dim3 gridDim = dim3(1, 1, 1);
+    dim3 blockDim = dim3(1, 1, 1);
+    size_t sharedMemBytes = 0;
+    struct CUstream_st * hStream = nullptr;
+};
+
 namespace driver {
     class CUDAContext {
     public:
@@ -45,14 +53,23 @@ namespace driver {
         bool registerFunction(void* fatbinary, const void * hostFunc, char* deviceFunc, const char* name);
         // get registered kernels
         CUfunction getKernel(const void * hostFunc);
+
+        // Kernel Launch Configuration
+        void pushLaunchConfig(const dim3& gridDim, const dim3& blockDim, size_t sharedMemBytes, CUstream_st* hStream);
+        launchConfiguration popLaunchConfig();
+
     private:
         CUctx_st context;
         // Allocated device memory pointers and their sizes
-        std::unordered_map<CUdeviceptr, size_t> allocations;
+        std::unordered_map<void*, size_t> allocations;
         // Registered kernels
         std::unordered_map<const void*, CUfunction> kernels;
         // Registered fatbinary modules
         std::unordered_map<void*, CUmodule> fatbins; 
+
+        // Kernel Launch Configuration
+        std::stack<launchConfiguration> launchConfigurations;
+        
     };
 
     extern std::stack<CUDAContext*> contextStack; // Stack to manage contexts

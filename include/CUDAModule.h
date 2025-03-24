@@ -1,5 +1,6 @@
 #ifndef CUDAMODULE_H
 #define CUDAMODULE_H
+#include "ocelot/ir/Global.h"
 #include <cuda.h>
 #include <string>
 #include <unordered_map>
@@ -32,9 +33,11 @@ namespace driver {
         void unload();
         ir::Module* getModule();
         CUfunction getFunction(const char* name); // Retrieve a function by name
+        std::tuple<CUdeviceptr, size_t> getGlobal(const char* name); // Retrieve a global variable by name
 
     private:
         std::unordered_map<std::string, CUDAFunction> functions; // Map of function names to CUDAFunction objects
+        std::unordered_map<std::string, ir::Global*> globals; // Map of global variable names to their device pointers
         ir::Module module;
     };
 } // namespace driver

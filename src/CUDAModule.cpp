@@ -1,4 +1,6 @@
+#include "cuda.h"
 #include <CUDAModule.h>
+#include <cstdint>
 #include <stddef.h>
 
 using namespace driver;
@@ -32,6 +34,7 @@ bool CUDAModule::load(const void* image) {
     }
     // fatbin magic number
     else if (magicNumber == 0xba55ed50) { 
+        LOG(LOG_LEVEL_DEBUG, "DEBUG", "Loading fatbin module");
         uint8_t *decompressedData = nullptr;
         size_t imageSize = getImageSize(image);
         size_t decompressedSize = decompress_fatbin(reinterpret_cast<const uint8_t*>(image), imageSize, &decompressedData);
@@ -90,4 +93,21 @@ CUfunction CUDAModule::getFunction(const char* name) {
     // CUDAFunction cudaFunc(name);
     functions.emplace(name, CUDAFunction(name, this)); 
     return functions.at(name).getFunctionPointer();
+}
+
+std::tuple<CUdeviceptr, size_t> CUDAModule::getGlobal(const char* name) {
+    // Check if the global variable is already loaded
+    auto it = globals.find(name);
+    if (it != globals.end()) {
+        auto ptr = it->second->pointer;
+        return {static_cast<CUdeviceptr>(reinterpret_cast<uintptr_t>(ptr)), it->second->statement.bytes()};
+    }
+
+    auto global = module.getGlobal(name);
+    if (global == nullptr) {
+        return {0, 0};
+    }
+    globals.emplace(name, global);
+    auto ptr = global->pointer;
+    return {static_cast<CUdeviceptr>(reinterpret_cast<uintptr_t>(ptr)), it->second->statement.bytes()};
 }

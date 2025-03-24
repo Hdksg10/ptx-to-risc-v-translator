@@ -41,6 +41,10 @@ extern "C" CUresult CUDAAPI cuDevicePrimaryCtxRetain(CUcontext *pctx, CUdevice d
     return cuDevicePrimaryCtxRetain_cpp(pctx, dev);
 }
 
+extern "C" CUresult CUDAAPI cuDeviceGetP2PAttribute(int *value, CUdevice_P2PAttribute attrib, CUdevice srcDevice, CUdevice dstDevice) {
+    return cuDeviceGetP2PAttribute_cpp(value, attrib, srcDevice, dstDevice);
+}
+
 extern "C" CUresult CUDAAPI cuCtxCreate(CUcontext *pctx, unsigned int flags, CUdevice dev) {
     return cuCtxCreate_cpp(pctx, flags, dev);
 }
@@ -60,6 +64,13 @@ extern "C" CUresult CUDAAPI cuCtxGetDevice(CUdevice *device) {
 extern "C" CUresult CUDAAPI cuCtxDestroy(CUcontext ctx) {
     return cuCtxDestroy_cpp(ctx);
 }
+extern "C" CUresult CUDAAPI cuCtxCreate_v3(CUcontext* pctx, CUexecAffinityParam* paramsArray, int numParams, unsigned int flags, CUdevice dev) {
+    return cuCtxCreate_v3_cpp(pctx, paramsArray, numParams, flags, dev);
+}
+
+extern "C" CUresult CUDAAPI cuCtxSynchronize() {
+    return cuCtxSynchronize_cpp();
+}
 
 extern "C" CUresult CUDAAPI cuModuleLoad(CUmodule *module, const char *fname) {
     return cuModuleLoad_cpp(module, fname);
@@ -75,6 +86,10 @@ extern "C" CUresult CUDAAPI cuModuleGetFunction(CUfunction *hfunc, CUmodule hmod
 
 extern "C" CUresult CUDAAPI cuModuleUnload(CUmodule hmod) {
     return cuModuleUnload_cpp(hmod);
+}
+
+extern "C" CUresult CUDAAPI cuModuleGetGlobal(CUdeviceptr *dptr, size_t *bytes, CUmodule hmod, const char *name) {
+    return cuModuleGetGlobal_cpp(dptr, bytes, hmod, name);
 }
 
 extern "C" CUresult CUDAAPI cuMemAlloc(CUdeviceptr* dptr, size_t bytesize) {
@@ -95,6 +110,13 @@ extern "C" CUresult CUDAAPI cuMemcpyDtoH(void *dstHost, CUdeviceptr srcDevice, s
 
 extern "C" CUresult cuMemsetD32(CUdeviceptr dstDevice, unsigned int ui, size_t N) {
     return cuMemsetD32_cpp(dstDevice, ui, N);
+}
+
+extern "C" CUresult CUDAAPI cuMemGetInfo(size_t *free, size_t *total) {
+    return cuMemGetInfo_cpp(free, total);
+}
+extern "C" CUresult CUDAAPI cuMemGetAllocationGranularity(size_t* granularity, const CUmemAllocationProp* prop, CUmemAllocationGranularity_flags option) {
+    return cuMemGetAllocationGranularity_cpp(granularity, prop, option);
 }
 
 extern "C" CUresult CUDAAPI cuLaunchKernel(CUfunction f, unsigned int gridDimX, unsigned int gridDimY, unsigned int gridDimZ, unsigned int blockDimX, unsigned int blockDimY, unsigned int blockDimZ, unsigned int sharedMemBytes, CUstream hStream, void **kernelParams, void **extra) {

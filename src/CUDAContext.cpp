@@ -1,3 +1,4 @@
+#include "cuda.h"
 #include <Interface.h>
 #include <CUDAContext.h>
 #include <log.h>
@@ -23,8 +24,6 @@ CUDAContext::~CUDAContext() {
 }
 
 void CUDAContext::create(CUdevice device, unsigned int flags) {
-    // Assuming a function cuCtxCreate exists in CUDA driver API
-    // cuCtxCreate(&context, flags, device);
     context.flags = flags;
     context.valid = 1;
     context.device = device; // Assign the device id to the context
@@ -59,9 +58,13 @@ bool CUDAContext::registerFunction(void* fatbinary, const void * hostFunc, char*
     if (it != fatbins.end()) {
         // Fatbinary already loaded, get the module
         CUmodule module = it->second;
-        CUfunction* f = nullptr;
-        cuModuleGetFunction_cpp(f, module, name);
-        kernels[hostFunc] = *f;
+        CUfunction f;
+        CUresult r = cuModuleGetFunction_cpp(&f, module, name);
+        if (r != CUDA_SUCCESS) {
+            LOG(LOG_LEVEL_ERROR, "ERROR", "Failed to get function %s from module %p, error code %d", name, module, r);
+            return false;
+        }
+        kernels[hostFunc] = f;
         return true; 
     }
     else {
@@ -81,9 +84,9 @@ CUfunction CUDAContext::getKernel(const void * hostFunc){
 
 bool CUDAContext::allocate(CUdeviceptr* dptr, size_t size) {
     void * ptr_h = malloc(size);
-    CUdeviceptr ptr = static_cast<unsigned long long>(reinterpret_cast<uintptr_t>(ptr_h));
+    CUdeviceptr ptr = (reinterpret_cast<uintptr_t>(ptr_h));
     if (ptr) {
-        allocations[ptr] = size;
+        allocations[ptr_h] = size;
         *dptr = ptr;
         return true;
     }
@@ -93,17 +96,22 @@ bool CUDAContext::allocate(CUdeviceptr* dptr, size_t size) {
 }
 
 bool CUDAContext::free(CUdeviceptr dptr) {
-    if (allocations.find(dptr) != allocations.end()) {
-        std::free(reinterpret_cast<void*>(static_cast<uintptr_t>(dptr)));
-        allocations.erase(dptr);
-        return true;
+    for (auto it = allocations.begin(); it != allocations.end(); ++it) {
+        if (reinterpret_cast<uintptr_t>(it->first) == dptr) {  
+            void* ptr_h = it->first;
+            LOG(LOG_LEVEL_DEBUG, "DEBUG", "Found allocation for %#llx of size %zu bytes", dptr, it->second);
+            // std::free(ptr_h);
+            allocations.erase(it);
+            return true;
+        }
     }
     return false;
 }
 
 size_t CUDAContext::getAllocatedSize(CUdeviceptr ptr) const {
-    if (allocations.find(ptr) != allocations.end()) {
-        return allocations.at(ptr);
+    void* ptr_h = reinterpret_cast<void*>((ptr));
+    if (allocations.find(ptr_h) != allocations.end()) {
+        return allocations.at(ptr_h);
     }
     else {
         return 0;
@@ -111,5 +119,26 @@ size_t CUDAContext::getAllocatedSize(CUdeviceptr ptr) const {
 }
 
 bool CUDAContext::valid() const {
-    return context.valid && !context.destroyed; // Check if the context is valid and not destroyed
+    return context.valid && !context.destroyed; 
+}
+
+void CUDAContext::pushLaunchConfig(const dim3& gridDim, const dim3& blockDim, size_t sharedMemBytes, CUstream_st* hStream) {
+    launchConfiguration config;
+    config.gridDim = gridDim;
+    config.blockDim = blockDim;
+    config.sharedMemBytes = sharedMemBytes;
+    config.hStream = hStream;
+    launchConfigurations.push(config);
+}
+
+launchConfiguration CUDAContext::popLaunchConfig() {
+    if (!launchConfigurations.empty()) {
+        launchConfiguration config = launchConfigurations.top();
+        launchConfigurations.pop();
+        return config;
+    }
+    else {
+        // Handle empty stack case, possibly throw an exception or return a default configuration
+        return launchConfiguration();
+    }
 }

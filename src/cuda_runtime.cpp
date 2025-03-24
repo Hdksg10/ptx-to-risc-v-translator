@@ -6,20 +6,38 @@
 // internel initialization
 extern "C" void __cudaRegisterVar(void **fatCubinHandle, char *hostVar, char *deviceAddress,
     const char *deviceName, int ext, size_t size, int constant,
-    int global);
-extern "C" void **__cudaRegisterFatBinary(void *fatCubin);  
+    int global)
+{
+    __cudaRegisterVar_cpp(fatCubinHandle, hostVar, deviceAddress, deviceName, ext, size, constant, global);
+}
+extern "C" void **__cudaRegisterFatBinary(void *fatCubin)
+{
+    return __cudaRegisterFatBinary_cpp(fatCubin);
+}
 extern "C" void __cudaRegisterFunction(void **fatCubinHandle, const char *hostFun,
         char *deviceFun, const char *deviceName,
         int thread_limit, uint3 *tid, uint3 *bid,
-        dim3 *bDim, dim3 *gDim, int *wSize);
-extern "C" void __cudaUnregisterFatBinary(void **fatCubinHandle);
+        dim3 *bDim, dim3 *gDim, int *wSize)
+{
+    __cudaRegisterFunction_cpp(fatCubinHandle, hostFun, deviceFun, deviceName, thread_limit, tid, bid, bDim, gDim, wSize);
+}
+extern "C" void __cudaUnregisterFatBinary(void **fatCubinHandle)
+{
+    __cudaUnregisterFatBinary_cpp(fatCubinHandle);
+}
 // internel kernel launch configuration
 extern "C" unsigned __cudaPushCallConfiguration(dim3 gridDim,
     dim3 blockDim,
     size_t sharedMem = 0,
-    struct CUstream_st *stream = 0);
+    struct CUstream_st *stream = 0)
+{
+    return __cudaPushCallConfiguration_cpp(gridDim, blockDim, sharedMem, stream);
+}
 
-extern "C" unsigned __cudaPopCallConfiguration(void* param1, void* param2, void* param3, void* param4);
+extern "C" unsigned __cudaPopCallConfiguration(void* param1, void* param2, void* param3, void* param4)
+{
+    return __cudaPopCallConfiguration_cpp(param1, param2, param3, param4);
+}
 
 extern "C" cudaError_t CUDARTAPI cudaDeviceCanAccessPeer(int *canAccessPeer, int device, int peerDevice)
 {
