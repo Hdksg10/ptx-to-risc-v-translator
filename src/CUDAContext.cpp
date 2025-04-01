@@ -1,9 +1,9 @@
-#include "cuda.h"
 #include <Interface.h>
 #include <CUDAContext.h>
 #include <log.h>
 using namespace driver;
 
+cudaError_t driver::error = cudaSuccess;;
 std::stack<CUDAContext*> driver::contextStack; // Initialize the stack to manage contexts
 
 CUDAContext::CUDAContext() {
@@ -141,4 +141,11 @@ launchConfiguration CUDAContext::popLaunchConfig() {
         // Handle empty stack case, possibly throw an exception or return a default configuration
         return launchConfiguration();
     }
+}
+
+void CUDAContext::unloadFatbinary() {
+    for (auto& pair : fatbins) {
+        cuModuleUnload_cpp(pair.second);
+    }
+    fatbins.clear();
 }

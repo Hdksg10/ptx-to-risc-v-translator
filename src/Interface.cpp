@@ -79,6 +79,17 @@ CUresult CUDAAPI cuDeviceGetName_cpp(char *name, int len, CUdevice dev) {
     return CUDA_SUCCESS;
 }
 
+CUresult CUDAAPI cuDeviceComputeCapability_cpp(int *major, int *minor, CUdevice dev) {
+    if (driver::driverDeinitialized) return CUDA_ERROR_DEINITIALIZED;
+    if (!driver::driverInitialized) return CUDA_ERROR_NOT_INITIALIZED;
+    if (dev < 0 || dev >= driver::MAX_DEVICES) return CUDA_ERROR_INVALID_DEVICE; // Check for valid device handle
+    if (major == nullptr || minor == nullptr) return CUDA_ERROR_INVALID_VALUE; // Check for valid pointers
+
+    *major = driver::devices[dev]->major;
+    *minor = driver::devices[dev]->minor;
+    return CUDA_SUCCESS;
+}
+
 CUresult CUDAAPI cuDeviceTotalMem_cpp(size_t *bytes, CUdevice dev) {
     // Implementation to get the total memory of the device
     if (driver::driverDeinitialized) return CUDA_ERROR_DEINITIALIZED;
@@ -362,6 +373,36 @@ CUresult CUDAAPI cuModuleLoadData_cpp(CUmodule *module, const void *image) {
     }
 }
 
+CUresult cuModuleLoadDataEx_cpp(CUmodule* module, const void* image, unsigned int numOptions, CUjit_option* options, void** optionValues)
+{
+    LOG(LOG_LEVEL_DEBUG, "DEBUG", "cuModuleLoadDataEx called with %u options", numOptions);
+    LOG(LOG_LEVEL_INFO, "INFO", "cuModuleLoadDataEx option is unsupported now, calling cuModuleLoadData instead");
+    for (unsigned int i = 0; i < numOptions; i++) {
+        LOG(LOG_LEVEL_DEBUG, "DEBUG", "Option %u: %u, Value: %p", i, options[i], optionValues[i]);
+        switch (options[i]) {
+            case CU_JIT_INFO_LOG_BUFFER_SIZE_BYTES:
+                *((size_t*)optionValues[i]) = 0; 
+                break;
+            case CU_JIT_INFO_LOG_BUFFER:
+                *((char*)optionValues[i]) = '\0'; 
+                break;
+            case CU_JIT_ERROR_LOG_BUFFER_SIZE_BYTES:
+                *((size_t*)optionValues[i]) = 0; 
+                break;
+            case CU_JIT_ERROR_LOG_BUFFER:
+                *((char*)optionValues[i]) = '\0'; 
+                break;
+            case CU_JIT_MAX_REGISTERS:
+                *((int*)optionValues[i]) = 0; 
+                break;
+            default:
+               LOG(LOG_LEVEL_ERROR, "ERROR", "Unknown option %u", options[i]);
+                break;
+        }
+    }
+    return cuModuleLoadData_cpp(module, image);
+}
+
 CUresult cuMemAlloc_cpp(CUdeviceptr* dptr, size_t bytesize)
 {
     if (driver::driverDeinitialized) return CUDA_ERROR_DEINITIALIZED;
@@ -614,8 +655,15 @@ void __cudaRegisterFunction_cpp(void **fatCubinHandle, const char *hostFun,
 
 void __cudaUnregisterFatBinary_cpp(void **fatCubinHandle)
 {
-    // It's ok to do nothing here as all context and resources will be released when the context is destroyed. 
     LOG(LOG_LEVEL_DEBUG, "DEBUG", "Unregistering fat binary handler %p.", fatCubinHandle);
+    auto context = driver::contextStack.top();
+    if (!context || !context->valid()) {
+        return;
+    }
+    // do some cleanup here
+    // unload fatbin's modules
+    context->unloadFatbinary();
+    
 }
 
 // Kernel launch configuration
@@ -878,7 +926,9 @@ cudaError_t CUDARTAPI cudaDeviceSetSharedMemConfig_cpp(enum cudaSharedMemConfig 
 
 cudaError_t CUDARTAPI cudaGetDevice_cpp(int *device)
 {
-    return cudaErrorUnknown;
+    // Always return device 0 since we are simulating a single device
+    *device = 0; 
+    return cudaSuccess;
 }
 
 cudaError_t CUDARTAPI cudaGetDeviceCount_cpp(int *count)
@@ -893,7 +943,17 @@ cudaError_t CUDARTAPI cudaGetDeviceFlags_cpp(unsigned int *flags)
 
 cudaError_t CUDARTAPI cudaGetDeviceProperties_cpp(struct cudaDeviceProp *prop, int device)
 {
-    return cudaErrorUnknown;
+    if (device < 0 || device >= driver::MAX_DEVICES)
+    {
+        return cudaErrorInvalidDevice;
+    }
+    prop->major = driver::EmulatedCUDADevice::major;
+    prop->minor = driver::EmulatedCUDADevice::minor;
+    prop->totalGlobalMem = driver::EmulatedCUDADevice::totalMemBytes;
+    std::strcpy(prop->name, driver::EmulatedCUDADevice::name.c_str());
+    prop->uuid = driver::EmulatedCUDADevice::uuid;
+    prop->multiProcessorCount = driver::EmulatedCUDADevice::multiProcessorCount;
+    return cudaSuccess;
 }
 
 cudaError_t CUDARTAPI cudaSetDeviceFlags_cpp(unsigned int flags)
@@ -918,7 +978,7 @@ const char* CUDARTAPI cudaGetErrorString_cpp(cudaError_t error)
 
 cudaError_t CUDARTAPI cudaGetLastError_cpp(void)
 {
-    return cudaErrorUnknown;
+    return driver::error;
 }
 
 cudaError_t CUDARTAPI cudaPeekAtLastError_cpp(void)
@@ -993,7 +1053,8 @@ cudaError_t CUDARTAPI cudaStreamBeginCapture_cpp(cudaStream_t stream, cudaStream
 
 cudaError_t CUDARTAPI cudaEventCreate_cpp(cudaEvent_t *event)
 {
-    return cudaErrorUnknown;
+    *event = new struct CUevent_st;
+    return cudaSuccess;
 }
 
 cudaError_t CUDARTAPI cudaEventCreateWithFlags_cpp(cudaEvent_t *event, unsigned int flags)
@@ -1003,12 +1064,14 @@ cudaError_t CUDARTAPI cudaEventCreateWithFlags_cpp(cudaEvent_t *event, unsigned 
 
 cudaError_t CUDARTAPI cudaEventDestroy_cpp(cudaEvent_t event)
 {
-    return cudaErrorUnknown;
+    delete event;
+    return cudaSuccess;
 }
 
 cudaError_t CUDARTAPI cudaEventElapsedTime_cpp(float *ms, cudaEvent_t start, cudaEvent_t end)
 {
-    return cudaErrorUnknown;
+    *ms = static_cast<float>(end->record_time - start->record_time);
+    return cudaSuccess;
 }
 
 cudaError_t CUDARTAPI cudaEventQuery_cpp(cudaEvent_t event)
@@ -1018,7 +1081,10 @@ cudaError_t CUDARTAPI cudaEventQuery_cpp(cudaEvent_t event)
 
 cudaError_t CUDARTAPI cudaEventRecord_cpp(cudaEvent_t event, cudaStream_t stream)
 {
-    return cudaErrorUnknown;
+    auto now = std::chrono::system_clock::now();
+    auto duration = now.time_since_epoch();
+    event->record_time = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count(); 
+    return cudaSuccess;
 }
 
 cudaError_t CUDARTAPI cudaEventRecordWithFlags_cpp(cudaEvent_t event, cudaStream_t stream, unsigned int flags)
@@ -1028,7 +1094,7 @@ cudaError_t CUDARTAPI cudaEventRecordWithFlags_cpp(cudaEvent_t event, cudaStream
 
 cudaError_t CUDARTAPI cudaEventSynchronize_cpp(cudaEvent_t event)
 {
-    return cudaErrorUnknown;
+    return cudaSuccess;
 }
 
 cudaError_t CUDARTAPI cudaFuncGetAttributes_cpp(struct cudaFuncAttributes *attr, const void *func)

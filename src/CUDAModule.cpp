@@ -42,17 +42,28 @@ bool CUDAModule::load(const void* image) {
         uint8_t *ptx_section = nullptr;
         size_t ptx_size = getPTXSection(decompressedData, decompressedSize, &ptx_section);
         // filter PTX code
-        std::string filtered_ptx;
-        filtered_ptx.reserve(ptx_size);
-        std::copy_if(ptx_section, ptx_section + ptx_size, std::back_inserter(filtered_ptx),
-            [](unsigned char c) { return (c >= 32) || (c == '\t') || (c == '\n') || (c == '\r'); });
+        LOG(LOG_LEVEL_DEBUG, "DEBUG", "Filtering PTX code");
+        // std::string filtered_ptx;
+        // filtered_ptx.reserve(ptx_size);
+        // std::copy_if(ptx_section, ptx_section + ptx_size, std::back_inserter(filtered_ptx),
+        //     [](unsigned char c) { return (c >= 32) || (c == '\t') || (c == '\n') || (c == '\r'); });
+        std::vector<uint8_t> filteredData;
+        for (size_t i = 0; i < ptx_size; ++i) {
+            uint8_t byte = ptx_section[i];
+            if ((byte >= 32) || (byte == '\t') || (byte == '\n') || (byte == '\r')) {
+                filteredData.push_back(byte);
+            }
+        }
         // Load the decompressed ptx data into the module
+        LOG(LOG_LEVEL_DEBUG, "DEBUG", "Loading PTX code into module");
+        // Create a temporary file to store the PTX code
         std::filesystem::path temp_dir = std::filesystem::temp_directory_path();
         std::filesystem::path temp_file = temp_dir / "translator_temp.ptx";
-        std::ofstream ofs(temp_file);
-        ofs << filtered_ptx;
+        std::ofstream ofs(temp_file, std::ios::binary);
+        // ofs << filtered_ptx;
+        ofs.write(reinterpret_cast<const char*>(filteredData.data()), filteredData.size());
         ofs.close();
-        std::cout << temp_file.string() << std::endl;
+        // std::cout << temp_file.string() << std::endl;
         return module.load(temp_file.string());
     }
     // PTX text file

@@ -10,6 +10,7 @@
 #include <EmulatedCUDADevice.h>
 #include <CUDAModule.h>
 #include <CUDAFunction.h>
+#include <CUDAEvent.h>
 #include <log.h>
 
 // CUDA Types
@@ -31,6 +32,7 @@ CUresult CUDAAPI cuDriverGetVersion_cpp(int *driverVersion);
 // device management
 CUresult CUDAAPI cuDeviceGet_cpp(CUdevice *device, int ordinal);
 CUresult CUDAAPI cuDeviceGetName_cpp(char *name, int len, CUdevice dev);
+CUresult CUDAAPI cuDeviceComputeCapability_cpp(int *major, int *minor, CUdevice dev);
 CUresult CUDAAPI cuDeviceTotalMem_cpp(size_t *bytes, CUdevice dev);
 CUresult CUDAAPI cuDeviceGetUuid_cpp(CUuuid *uuid, CUdevice dev);
 CUresult CUDAAPI cuDeviceGetAttribute_cpp(int *pi, CUdevice_attribute attrib, CUdevice dev);
@@ -52,6 +54,7 @@ CUresult CUDAAPI cuCtxGetApiVersion_cpp ( CUcontext ctx, unsigned int* version )
 // module management
 CUresult CUDAAPI cuModuleLoad_cpp(CUmodule *module, const char *fname);
 CUresult CUDAAPI cuModuleLoadData_cpp(CUmodule *module, const void *image);
+CUresult CUDAAPI cuModuleLoadDataEx_cpp(CUmodule *module, const void *image, unsigned int numOptions, CUjit_option *options, void **optionValues);
 CUresult CUDAAPI cuModuleUnload_cpp(CUmodule hmod);
 CUresult CUDAAPI cuModuleGetFunction_cpp(CUfunction *hfunc, CUmodule hmod, const char *name);
 CUresult CUDAAPI cuModuleGetGlobal_cpp(CUdeviceptr *dptr, size_t *bytes, CUmodule hmod, const char *name);

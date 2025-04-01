@@ -79,17 +79,32 @@ bool test(std::stringstream& status) {
     }
 
     // Allocate memory for the kernel argument
+    CUdeviceptr a_arg;
+    CUDA_CHECK(cuMemAlloc(&a_arg, sizeof(float)), "Failed to allocate memory for kernel argument: ");
+    CUdeviceptr b_arg;
+    CUDA_CHECK(cuMemAlloc(&b_arg, sizeof(float)), "Failed to allocate memory for kernel argument: ");
+
+    float h_a = 1.23;
+    float h_b = 2.13;
+    CUDA_CHECK(cuMemcpyHtoD(a_arg, &h_a, sizeof(float)), "Failed to copy memory from host to device: ");
+    CUDA_CHECK(cuMemcpyHtoD(b_arg, &h_b, sizeof(float)), "Failed to copy memory from host to device: ");
+    int N = 1;
+
     CUdeviceptr d_arg;
-    CUDA_CHECK(cuMemAlloc(&d_arg, sizeof(uint64_t)), "Failed to allocate memory for kernel argument: ");
+    CUDA_CHECK(cuMemAlloc(&d_arg, sizeof(float)), "Failed to allocate memory for kernel argument: ");
 
     std::vector<void*> kernelParams;
+    kernelParams.push_back(&a_arg);
+    kernelParams.push_back(&b_arg);
     kernelParams.push_back(&d_arg);
+    kernelParams.push_back(&N);
+
     
     CUDA_CHECK(cuLaunchKernel(kernel, 1, 1, 1, 1, 1, 1, 0, 0, kernelParams.data(), 0), "Failed to launch kernel: ");
 
     // Copy result back to host
-    uint64_t h_arg;
-    CUDA_CHECK(cuMemcpyDtoH(&h_arg, d_arg, sizeof(uint64_t)), "Failed to copy memory from device to host: ");
+    float h_arg;
+    CUDA_CHECK(cuMemcpyDtoH(&h_arg, d_arg, sizeof(float)), "Failed to copy memory from device to host: ");
 
     std::cout << h_arg << std::endl;
 

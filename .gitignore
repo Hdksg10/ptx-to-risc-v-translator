@@ -2,3 +2,4 @@ disk
 *.img
 build
 .vscode
+*.out

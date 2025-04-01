@@ -25,6 +25,10 @@ extern "C" CUresult CUDAAPI cuDeviceGetName(char *name, int len, CUdevice dev) {
     return cuDeviceGetName_cpp(name, len, dev);
 }
 
+extern "C" CUresult CUDAAPI cuDeviceComputeCapability(int *major, int *minor, CUdevice dev) {
+    return cuDeviceComputeCapability_cpp(major, minor, dev);
+}
+
 extern "C" CUresult CUDAAPI cuDeviceTotalMem(size_t *bytes, CUdevice dev) {
     return cuDeviceTotalMem_cpp(bytes, dev);
 }
@@ -86,6 +90,10 @@ extern "C" CUresult CUDAAPI cuModuleLoad(CUmodule *module, const char *fname) {
 
 extern "C" CUresult CUDAAPI cuModuleLoadData(CUmodule *module, const void *image) {
     return cuModuleLoadData_cpp(module, image);
+}
+
+extern "C" CUresult CUDAAPI cuModuleLoadDataEx(CUmodule* module, const void* image, unsigned int numOptions, CUjit_option* options, void** optionValues) {
+    return cuModuleLoadDataEx_cpp(module, image, numOptions, options, optionValues);
 }
 
 extern "C" CUresult CUDAAPI cuModuleGetFunction(CUfunction *hfunc, CUmodule hmod, const char *name) {

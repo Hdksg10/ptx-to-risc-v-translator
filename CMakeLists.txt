@@ -9,6 +9,7 @@ if (DEBUG_BUILD)
 endif()
 option(BUILD_CRICKET "BUILD CRICKET RPC SERVER" OFF)
 option(BUILD_TEST "BUILD TESTS" ON)
+option(BUILD_SAMPLES "BUILD CUDA SAMPLES" OFF)
 # Build Ocelot
 set(OCELOT_PATH ${CMAKE_SOURCE_DIR}/deps/3rd/gpuocelot/ocelot)
 set(OCELOT_BUILD_PATH ${OCELOT_PATH}/build)
@@ -43,13 +44,15 @@ file(GLOB CUDA_SRC_FILES
     "src/Interface.cpp"
     )
 add_library(cuda_riscv SHARED ${CUDA_SRC_FILES})
-target_include_directories(cuda_riscv PUBLIC include include/cuda/include)
+set(CUDA_INCLUDE_DIR 
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/include/cuda/include)
+target_include_directories(cuda_riscv PUBLIC ${CUDA_INCLUDE_DIR})
 target_include_directories(cuda_riscv PUBLIC ${OCELOT_PATH}/include)
 target_include_directories(cuda_riscv PUBLIC ${FATBIN_PATH})
 target_link_libraries(cuda_riscv PRIVATE dl pthread)
 target_link_libraries(cuda_riscv PRIVATE fatbin)
 
-# target_link_libraries(cuda_riscv PRIVATE ${OCELOT_LIB})
 target_link_libraries(cuda_riscv PRIVATE
 gpuocelot
 )
@@ -71,7 +74,7 @@ endif()
 
 # Build test
 if (BUILD_TEST)
-    file(GLOB_RECURSE TEST_SOURCES "test/*.cpp")
+    file(GLOB TEST_SOURCES "test/*.cpp")
     foreach(SOURCE_FILE ${TEST_SOURCES})
         string(REGEX REPLACE ".*/([^/]+)\\.[^.]+$" "\\1" TEST_NAME ${SOURCE_FILE})
         message(STATUS "Adding test source: ${TEST_NAME}")
@@ -80,20 +83,27 @@ if (BUILD_TEST)
         target_link_libraries(${TEST_NAME} PRIVATE cuda_riscv)
     endforeach()
     
+endif()
 
-    # target_link_libraries(test ${OCELOT_LIB})
-    # target_link_libraries(test PRIVATE
-    #         gpuocelot_analysis
-    #         gpuocelot_api
-    #         gpuocelot_cal
-    #         gpuocelot_executive
-    #         gpuocelot_ir
-    #         gpuocelot_parser
-    #         gpuocelot_trace
-    #         gpuocelot_transforms
-    #         gpuocelot_translator
-    #         gpuocelot_util
-    #     )
-    
-
+# Build samples
+if (BUILD_SAMPLES)
+    # find_package(CUDAToolkit)
+    set(SAMPLES_DIR ${CMAKE_SOURCE_DIR}/test/cuda9.0)
+    set(SAMPLES_INCLUDE_DIR ${SAMPLES_DIR}/common/inc)
+    file(GLOB SAMPLES LIST_DIRECTORIES true ${SAMPLES_DIR}/*)
+    foreach(SAMPLE ${SAMPLES})
+        if (IS_DIRECTORY ${SAMPLE})
+            get_filename_component(DIR_NAME ${SAMPLE} NAME)
+            if (DIR_NAME STREQUAL common)
+                continue()
+            endif()
+            string(FIND ${DIR_NAME} "Drv" FOUND_POS)
+            if (NOT ${FOUND_POS} EQUAL -1)
+                message(STATUS "Processing Drv Directory: ${DIR_NAME}")
+            else()
+                message(STATUS "Processing Normal Directory: ${DIR_NAME}")
+                add_subdirectory(${SAMPLE})
+            endif()
+        endif()
+    endforeach()
 endif()

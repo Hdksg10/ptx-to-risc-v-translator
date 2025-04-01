@@ -31,6 +31,9 @@ namespace driver {
         const static std::string name;
         const static CUuuid_st uuid;
         constexpr static size_t totalMemBytes = 4294967296; // 4 * 1024 * 1024 * 1024 Bytes
+        constexpr static int major = 7;
+        constexpr static int minor = 5;
+        constexpr static int multiProcessorCount = 4;
     public:
         /* Primary context of device
          *
