@@ -362,6 +362,8 @@ CUresult CUDAAPI cuModuleLoadData_cpp(CUmodule *module, const void *image) {
             delete mod;
             return CUDA_ERROR_FILE_NOT_FOUND;
         }
+        LOG(LOG_LEVEL_DEBUG, "DEBUG", "Module loaded successfully. Module id: %p", inner_module->getModule()->id());
+
         driver::devices[context->getContext()->device]->load(inner_module);
         mod->module = inner_module;
         mod->context = context;
@@ -851,7 +853,8 @@ cudaError_t CUDARTAPI cudaFree_cpp(void *devPtr)
 // Virtual implementation
 cudaError_t CUDARTAPI cudaDeviceSynchronize_cpp(void)
 {
-    return cudaErrorUnknown;
+    // do nothing
+    return cudaSuccess;
 }
 
 cudaError_t CUDARTAPI cudaChooseDevice_cpp(int *device, const struct cudaDeviceProp *prop)

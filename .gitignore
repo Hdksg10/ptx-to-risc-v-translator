@@ -3,3 +3,4 @@ disk
 build
 .vscode
 *.out
+test/temp

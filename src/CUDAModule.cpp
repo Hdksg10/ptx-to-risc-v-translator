@@ -58,7 +58,8 @@ bool CUDAModule::load(const void* image) {
         LOG(LOG_LEVEL_DEBUG, "DEBUG", "Loading PTX code into module");
         // Create a temporary file to store the PTX code
         std::filesystem::path temp_dir = std::filesystem::temp_directory_path();
-        std::filesystem::path temp_file = temp_dir / "translator_temp.ptx";
+        std::string temp_file_name = "translator_temp_.ptx"; // Use a unique name for the temporary file to avoid duplicate module names
+        std::filesystem::path temp_file = temp_dir / temp_file_name;
         std::ofstream ofs(temp_file, std::ios::binary);
         // ofs << filtered_ptx;
         ofs.write(reinterpret_cast<const char*>(filteredData.data()), filteredData.size());

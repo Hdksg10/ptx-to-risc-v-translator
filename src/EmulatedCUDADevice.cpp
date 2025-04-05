@@ -1,6 +1,7 @@
 
 #include "CUDAFunction.h"
 #include "cuda.h"
+#include "log.h"
 #include <EmulatedCUDADevice.h>
 namespace driver{
 
@@ -36,17 +37,22 @@ void EmulatedCUDADevice::launchKernel(CUfunction f, unsigned int  gridDimX, unsi
     size_t size = 0;
     size_t index = 0;
     auto paramsBuffer = new char[PARAMS_BUFFER_SIZE]; // allocate buffer for parameters
-    std::cout << "log1" << std::endl;
     for (auto argument = ptxKernel->arguments.begin(); argument != ptxKernel->arguments.end(); ++argument)
     {
-        size_t argSize = argument->getAlignment();
+        LOG(LOG_LEVEL_DEBUG, "DEBUG", "argument %s size: %u bytes aligenment: %u bytes", argument->toString().c_str(), argument->getSize(), argument->getAlignment());
+        
+        unsigned int misAlignment = size % argument->getAlignment();
+        size += misAlignment == 0 ? 0 : argument->getAlignment() - misAlignment;
+        size_t argSize = argument->getSize();
         std::memcpy(paramsBuffer + size, kernelParams[index], argSize);
         size += argSize;
+        
         index++;
     }
+    LOG(LOG_LEVEL_DEBUG, "DEBUG", "argument size: %zu bytes", size);
     device.launch(module->id(), kernel->getName(), grid, block, sharedMemBytes, paramsBuffer, size);
-    std::cout << "log3" << std::endl;
-    // delete[] paramsBuffer;
+    LOG(LOG_LEVEL_DEBUG, "DEBUG", "kernel %s launched", kernel->getName().c_str());
+    delete[] paramsBuffer;
 }
 
 int EmulatedCUDADevice::getAttribute(CUdevice_attribute attrib) {
