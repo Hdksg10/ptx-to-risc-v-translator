@@ -20,18 +20,9 @@ set(FATBIN_PATH ${CMAKE_SOURCE_DIR}/deps/3rd/decompression)
 set(FATBIN_BUILD_PATH ${FATBIN_PATH}/build)
 add_subdirectory(${FATBIN_PATH} ${FATBIN_BUILD_PATH}) 
 
-# set(OCELOT_LIB     
-#     gpuocelot_analysis
-#     gpuocelot_api
-#     gpuocelot_cal
-#     gpuocelot_executive
-#     gpuocelot_ir
-#     gpuocelot_parser
-#     gpuocelot_trace
-#     gpuocelot_transforms
-#     gpuocelot_translator
-#     gpuocelot_util
-#     )
+set(CURRENT_LOG_LEVEL 2 CACHE STRING "Set the log level (0=NONE, 1=ERROR, 2=INFO, 3=DEBUG)")
+add_compile_definitions(CURRENT_LOG_LEVEL=${CURRENT_LOG_LEVEL})
+
 # Build cuda-risc-v api
 
 file(GLOB CUDA_SRC_FILES 
@@ -99,14 +90,28 @@ if (BUILD_SAMPLES)
             endif()
             string(FIND ${DIR_NAME} "Drv" FOUND_POS)
             if (NOT ${FOUND_POS} EQUAL -1)
-                message(STATUS "Processing Drv Directory: ${DIR_NAME}")
+                continue()
             else()
-                message(STATUS "Processing Normal Directory: ${DIR_NAME}")
                 add_subdirectory(${SAMPLE})
             endif()
         endif()
     endforeach()
 endif()
+
+if (BUILD_SAMPLES)
+set(SAMPLES_DIR ${CMAKE_SOURCE_DIR}/test/cuda)
+file(GLOB SAMPLES LIST_DIRECTORIES true ${SAMPLES_DIR}/*)
+    foreach(SAMPLE ${SAMPLES})
+        if (IS_DIRECTORY ${SAMPLE})
+            get_filename_component(DIR_NAME ${SAMPLE} NAME)
+            if (DIR_NAME STREQUAL common)
+                continue()
+            endif()
+            add_subdirectory(${SAMPLE})
+        endif()
+    endforeach()
+endif()
+
 
 # Build OpenBLAS samples
 if (BUILD_OPENBLAS)
@@ -118,7 +123,6 @@ file(GLOB SAMPLES LIST_DIRECTORIES true ${SAMPLES_DIR}/*)
             if (DIR_NAME STREQUAL common)
                 continue()
             endif()
-            message(STATUS "Processing Normal Directory: ${DIR_NAME}")
             add_subdirectory(${SAMPLE})
         endif()
     endforeach()

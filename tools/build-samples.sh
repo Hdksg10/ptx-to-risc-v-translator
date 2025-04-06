@@ -18,4 +18,4 @@ mkdir -p "$BUILD_DIR"
 
 cd "$BUILD_DIR" || { echo "Failed to enter build directory"; exit 1; }
 
-cmake .. -DBUILD_SAMPLES=ON && make -j4
+cmake .. -DBUILD_SAMPLES=ON -DBUILD_OPENBLAS=ON && make -j4
