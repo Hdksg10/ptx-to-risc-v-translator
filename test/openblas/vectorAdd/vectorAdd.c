@@ -1,7 +1,7 @@
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/time.h>
+#include <cblas.h>
 
 double get_time_in_seconds() {
     struct timeval t;
@@ -9,10 +9,8 @@ double get_time_in_seconds() {
     return t.tv_sec + t.tv_usec * 1e-6;
 }
 
-void vector_add(const double* A, const double* B, double* C, int N) {
-    for (int i = 0; i < N; ++i) {
-        C[i] = A[i] + B[i];
-    }
+void vector_add(double* A, double* B, double* C, int N) {
+    cblas_daxpy(N, 1.0, A, 1, B, 1); // C = A + B
 }
 
 int main() {
