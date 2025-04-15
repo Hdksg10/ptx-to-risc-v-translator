@@ -1,0 +1,125 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+.version 7.8
+.target sm_52
+.address_size 64
+
+
+
+
+
+
+
+
+.visible .entry _Z18dot_product_kernelPKdS0_Pdi(
+.param .u64 _Z18dot_product_kernelPKdS0_Pdi_param_0,
+.param .u64 _Z18dot_product_kernelPKdS0_Pdi_param_1,
+.param .u64 _Z18dot_product_kernelPKdS0_Pdi_param_2,
+.param .u32 _Z18dot_product_kernelPKdS0_Pdi_param_3
+)
+{
+.reg .pred %p<7>;
+.reg .b32 %r<20>;
+.reg .f64 %fd<14>;
+.reg .b64 %rd<12>;
+
+
+	.shared .align 8 .b8 _ZZ18dot_product_kernelPKdS0_PdiE5cache[2048];
+
+
+ld.param.u64 %rd3, [_Z18dot_product_kernelPKdS0_Pdi_param_0];
+ld.param.u64 %rd4, [_Z18dot_product_kernelPKdS0_Pdi_param_1];
+ld.param.u64 %rd5, [_Z18dot_product_kernelPKdS0_Pdi_param_2];
+ld.param.u32 %r12, [_Z18dot_product_kernelPKdS0_Pdi_param_3];
+mov.u32 %r1, %ntid.x;
+mov.u32 %r2, %ctaid.x;
+mov.u32 %r3, %tid.x;
+mad.lo.s32 %r18, %r2, %r1, %r3;
+setp.ge.s32 %p1, %r18, %r12;
+mov.f64 %fd13, 0d0000000000000000;
+@%p1 bra $L__BB0_3;
+
+
+mov.u32 %r13, %nctaid.x;
+mul.lo.s32 %r5, %r1, %r13;
+cvta.to.global.u64 %rd1, %rd3;
+cvta.to.global.u64 %rd2, %rd4;
+
+
+$L__BB0_2:
+mul.wide.s32 %rd6, %r18, 8;
+add.s64 %rd7, %rd1, %rd6;
+add.s64 %rd8, %rd2, %rd6;
+ld.global.f64 %fd6, [%rd8];
+ld.global.f64 %fd7, [%rd7];
+fma.rn.f64 %fd13, %fd7, %fd6, %fd13;
+add.s32 %r18, %r18, %r5;
+setp.lt.s32 %p2, %r18, %r12;
+@%p2 bra $L__BB0_2;
+
+
+$L__BB0_3:
+shl.b32 %r14, %r3, 3;
+mov.u32 %r15, _ZZ18dot_product_kernelPKdS0_PdiE5cache;
+add.s32 %r8, %r15, %r14;
+st.shared.f64 [%r8], %fd13;
+bar.sync 0;
+shr.u32 %r19, %r1, 1;
+setp.eq.s32 %p3, %r19, 0;
+@%p3 bra $L__BB0_8;
+
+
+$L__BB0_5:
+setp.ge.s32 %p4, %r3, %r19;
+@%p4 bra $L__BB0_7;
+
+
+shl.b32 %r16, %r19, 3;
+add.s32 %r17, %r8, %r16;
+ld.shared.f64 %fd8, [%r8];
+ld.shared.f64 %fd9, [%r17];
+add.f64 %fd10, %fd9, %fd8;
+st.shared.f64 [%r8], %fd10;
+
+
+$L__BB0_7:
+bar.sync 0;
+shr.s32 %r11, %r19, 1;
+setp.gt.s32 %p5, %r19, 1;
+mov.u32 %r19, %r11;
+@%p5 bra $L__BB0_5;
+
+
+$L__BB0_8:
+setp.ne.s32 %p6, %r3, 0;
+@%p6 bra $L__BB0_10;
+
+
+ld.shared.f64 %fd11, [_ZZ18dot_product_kernelPKdS0_PdiE5cache];
+cvta.to.global.u64 %rd9, %rd5;
+mul.wide.u32 %rd10, %r2, 8;
+add.s64 %rd11, %rd9, %rd10;
+st.global.f64 [%rd11], %fd11;
+
+
+$L__BB0_10:
+ret;
+
+
+}
+
+

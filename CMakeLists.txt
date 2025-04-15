@@ -73,7 +73,8 @@ if (BUILD_TEST)
         target_include_directories(${TEST_NAME} PUBLIC include include/cuda/include)
         target_link_libraries(${TEST_NAME} PRIVATE cuda_riscv)
     endforeach()
-    
+    # Build Driver samples
+    add_subdirectory(${CMAKE_SOURCE_DIR}/test/driver)
 endif()
 
 # Build samples
@@ -127,3 +128,4 @@ file(GLOB SAMPLES LIST_DIRECTORIES true ${SAMPLES_DIR}/*)
         endif()
     endforeach()
 endif()
+
